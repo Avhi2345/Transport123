@@ -1718,9 +1718,6 @@ export async function getProfile(req: AuthRequest, res: Response) {
   });
 }
 
-// OTP Store for registration verification
-const otpStore = new Map<string, { otp: string, expiresAt: number }>();
-
 // 26. Send Email Verification OTP
 export async function sendOTP(req: Request, res: Response) {
   const { email } = req.body;
@@ -1733,13 +1730,37 @@ export async function sendOTP(req: Request, res: Response) {
     return res.status(400).json({ error: 'Invalid email address' });
   }
 
+  // Check for common typo domains to strictly restrict misspellings
+  const domain = email.split('@')[1]?.toLowerCase();
+  const typoDomains = ['gail.com', 'gamil.com', 'gmal.com', 'gmaill.com', 'gmil.com', 'gmail.co', 'gemail.com'];
+  if (typoDomains.includes(domain)) {
+    return res.status(400).json({ error: `It looks like you misspelled your email domain. Did you mean gmail.com?` });
+  }
+
   // Generate 6-digit OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   // Set expiry to 10 minutes from now
-  const expiresAt = Date.now() + 10 * 60 * 1000;
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-  // Store in memory
-  otpStore.set(email.toLowerCase().trim(), { otp, expiresAt });
+  // Store in database using upsert so we only have 1 active OTP per email at any time
+  const emailKey = email.toLowerCase().trim();
+  try {
+    await prisma.registrationOTP.upsert({
+      where: { email: emailKey },
+      update: {
+        otp,
+        expires_at: expiresAt
+      },
+      create: {
+        email: emailKey,
+        otp,
+        expires_at: expiresAt
+      }
+    });
+  } catch (dbErr: any) {
+    console.error('Failed to store OTP in database:', dbErr);
+    return res.status(500).json({ error: 'Failed to generate verification code in database.' });
+  }
 
   try {
     const emailHost = process.env.EMAIL_HOST || 'smtp.gmail.com';
@@ -1799,15 +1820,17 @@ export async function verifyOTP(req: Request, res: Response) {
     return res.status(400).json({ error: 'Email and OTP are required' });
   }
 
-  const key = email.toLowerCase().trim();
-  const record = otpStore.get(key);
+  const emailKey = email.toLowerCase().trim();
+  const record = await prisma.registrationOTP.findUnique({
+    where: { email: emailKey }
+  });
 
   if (!record) {
     return res.status(400).json({ error: 'No OTP requested for this email. Please request a new OTP.' });
   }
 
-  if (Date.now() > record.expiresAt) {
-    otpStore.delete(key);
+  if (new Date() > record.expires_at) {
+    await prisma.registrationOTP.delete({ where: { email: emailKey } }).catch(() => {});
     return res.status(400).json({ error: 'OTP has expired. Please request a new OTP.' });
   }
 
@@ -1816,6 +1839,6 @@ export async function verifyOTP(req: Request, res: Response) {
   }
 
   // OTP verified successfully. Remove it so it can't be reused.
-  otpStore.delete(key);
+  await prisma.registrationOTP.delete({ where: { email: emailKey } }).catch(() => {});
   return res.json({ success: true, message: 'OTP verified successfully.' });
 }

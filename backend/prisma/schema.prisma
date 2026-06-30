@@ -225,3 +225,13 @@ model TransportOperatorProfile {
 
   @@map("transport_transportoperatorprofile")
 }
+
+model RegistrationOTP {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  otp        String
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  @@map("registration_otp")
+}

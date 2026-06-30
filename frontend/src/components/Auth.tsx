@@ -16,6 +16,22 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
   const [message, setMessage] = useState<string | null>(null);
   const [showOTP, setShowOTP] = useState(false);
   const [otpCode, setOtpCode] = useState('');
+  const [resendingOTP, setResendingOTP] = useState(false);
+
+  const handleResendOTP = async () => {
+    setError(null);
+    setMessage(null);
+    setResendingOTP(true);
+    try {
+      await api.post('otp/send', { email });
+      setMessage(`Verification code resent successfully to ${email}.`);
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error || err.message || 'Failed to resend OTP. Please verify SMTP settings.';
+      setError(errorMsg);
+    } finally {
+      setResendingOTP(false);
+    }
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,12 +188,18 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
               {loading ? 'Verifying...' : 'Verify OTP & Sign Up'}
             </button>
 
-            <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '0.875rem' }}>
+            <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem' }}>
               <span 
                 onClick={() => setShowOTP(false)} 
-                style={{ color: 'var(--accent-primary)', cursor: 'pointer', fontWeight: 500 }}
+                style={{ color: 'var(--text-muted)', cursor: 'pointer', fontWeight: 500 }}
               >
                 ← Back to Details
+              </span>
+              <span 
+                onClick={handleResendOTP} 
+                style={{ color: resendingOTP ? 'var(--text-muted)' : 'var(--accent-primary)', cursor: resendingOTP ? 'not-allowed' : 'pointer', fontWeight: 500 }}
+              >
+                {resendingOTP ? 'Resending...' : 'Resend OTP'}
               </span>
             </div>
           </form>
