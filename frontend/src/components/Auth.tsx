@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '../services/supabaseClient';
+import { api } from '../services/api';
 
 interface AuthProps {
   onAuthSuccess: () => void;
@@ -22,15 +23,42 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
     setMessage(null);
     setLoading(true);
 
-    // Operator OTP Simulation gate
-    if (isSignUp && role === 'transport_operator' && !showOTP) {
-      setLoading(false);
-      setShowOTP(true);
+    if (isSignUp) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        setError('Please enter a valid email address.');
+        setLoading(false);
+        return;
+      }
+    }
+
+    if (isSignUp && !showOTP) {
+      try {
+        await api.post('otp/send', { email });
+        setShowOTP(true);
+        setMessage(`Verification code sent! Please check your email inbox: ${email}.`);
+      } catch (err: any) {
+        const errorMsg = err.response?.data?.error || err.message || 'Failed to send OTP code. Please verify SMTP settings.';
+        setError(errorMsg);
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
     try {
       if (isSignUp) {
+        // First verify the OTP
+        try {
+          await api.post('otp/verify', { email, otp: otpCode });
+        } catch (otpErr: any) {
+          const errorMsg = otpErr.response?.data?.error || otpErr.message || 'Invalid or expired OTP. Please try again.';
+          setError(errorMsg);
+          setLoading(false);
+          return;
+        }
+
+        // OTP verified successfully, now register on Supabase
         const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -38,10 +66,11 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             data: {
               role,
             },
+            emailRedirectTo: `${window.location.origin}/`,
           },
         });
         if (signUpError) throw signUpError;
-        setMessage('Check your email for the confirmation link! OTP Verification simulated successfully.');
+        setMessage('Your email has been verified and registered successfully!');
         setShowOTP(false);
       } else {
         // Admin Mock Login
@@ -125,7 +154,7 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             <div className="form-group">
               <label>Enter 6-Digit Email OTP</label>
               <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginBottom: '14px', lineHeight: '1.4' }}>
-                We sent a simulated verification OTP to <strong>{email}</strong>. (For testing, enter any 6 digits).
+                We sent a 6-digit verification OTP to <strong>{email}</strong>. Please enter the code from the email to verify and complete your sign up.
               </p>
               <input 
                 type="text" 

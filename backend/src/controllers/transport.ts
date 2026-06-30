@@ -1717,3 +1717,105 @@ export async function getProfile(req: AuthRequest, res: Response) {
     account_holder: req.user.account_holder
   });
 }
+
+// OTP Store for registration verification
+const otpStore = new Map<string, { otp: string, expiresAt: number }>();
+
+// 26. Send Email Verification OTP
+export async function sendOTP(req: Request, res: Response) {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ error: 'Invalid email address' });
+  }
+
+  // Generate 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  // Set expiry to 10 minutes from now
+  const expiresAt = Date.now() + 10 * 60 * 1000;
+
+  // Store in memory
+  otpStore.set(email.toLowerCase().trim(), { otp, expiresAt });
+
+  try {
+    const emailHost = process.env.EMAIL_HOST || 'smtp.gmail.com';
+    const emailPort = parseInt(process.env.EMAIL_PORT || '587');
+    const emailUser = process.env.EMAIL_HOST_USER;
+    const emailPassword = process.env.EMAIL_HOST_PASSWORD;
+    const defaultFrom = process.env.DEFAULT_FROM_EMAIL || emailUser || 'no-reply@neexplore.com';
+
+    if (!emailUser || !emailPassword) {
+      console.warn('WARNING: Email SMTP credentials not configured. Logging OTP instead.');
+      console.log(`[DEV OTP MOCK] To: ${email} | OTP: ${otp}`);
+      return res.json({ message: 'OTP sent successfully (Mock Mode).' });
+    }
+
+    const transporter = nodemailer.createTransport({
+      host: emailHost,
+      port: emailPort,
+      secure: emailPort === 465,
+      auth: {
+        user: emailUser,
+        pass: emailPassword,
+      },
+    });
+
+    const mailOptions = {
+      from: defaultFrom,
+      to: email,
+      subject: 'NE Explore - Email Verification OTP',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #ffffff;">
+          <h2 style="color: #4f46e5; text-align: center; margin-bottom: 24px;">Verify Your Email</h2>
+          <p style="font-size: 16px; color: #333333; line-height: 1.5;">Hello,</p>
+          <p style="font-size: 16px; color: #333333; line-height: 1.5;">Thank you for registering with <strong>NE Explore</strong>. Please use the following One-Time Password (OTP) to complete your registration:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <span style="display: inline-block; font-size: 32px; font-weight: bold; letter-spacing: 6px; color: #4f46e5; background-color: #f3f4f6; padding: 12px 30px; border-radius: 8px; border: 1px dashed #4f46e5;">${otp}</span>
+          </div>
+          <p style="font-size: 14px; color: #666666; line-height: 1.5; text-align: center;">This OTP is valid for <strong>10 minutes</strong>. Do not share this code with anyone.</p>
+          <hr style="border: 0; border-top: 1px solid #eeeeee; margin: 30px 0;" />
+          <p style="font-size: 12px; color: #999999; text-align: center; line-height: 1.5;">If you did not request this code, you can safely ignore this email.</p>
+          <p style="font-size: 12px; color: #999999; text-align: center; font-weight: bold; margin-top: 10px;">NE Explore Tourism Team</p>
+        </div>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    return res.json({ message: 'OTP sent successfully.' });
+  } catch (error: any) {
+    console.error('Failed to send OTP email:', error);
+    return res.status(500).json({ error: `Failed to send email: ${error.message}` });
+  }
+}
+
+// 27. Verify Email Verification OTP
+export async function verifyOTP(req: Request, res: Response) {
+  const { email, otp } = req.body;
+  if (!email || !otp) {
+    return res.status(400).json({ error: 'Email and OTP are required' });
+  }
+
+  const key = email.toLowerCase().trim();
+  const record = otpStore.get(key);
+
+  if (!record) {
+    return res.status(400).json({ error: 'No OTP requested for this email. Please request a new OTP.' });
+  }
+
+  if (Date.now() > record.expiresAt) {
+    otpStore.delete(key);
+    return res.status(400).json({ error: 'OTP has expired. Please request a new OTP.' });
+  }
+
+  if (record.otp !== otp.trim()) {
+    return res.status(400).json({ error: 'Invalid OTP code. Please try again.' });
+  }
+
+  // OTP verified successfully. Remove it so it can't be reused.
+  otpStore.delete(key);
+  return res.json({ success: true, message: 'OTP verified successfully.' });
+}

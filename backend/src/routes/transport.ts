@@ -30,7 +30,9 @@ import {
   getAdminOperatorProfiles,
   reviewOperatorProfile,
   updateProfile,
-  getProfile
+  getProfile,
+  sendOTP,
+  verifyOTP
 } from '../controllers/transport';
 
 const router = Router();
@@ -39,6 +41,8 @@ const router = Router();
 router.get('/trips/search', searchTrips);
 router.get('/trips/:id/seats', getTripSeats);
 router.get('/bookings/:booking_ref/pdf', downloadBookingPdf); // PDF download doesn't strictly enforce token in Django
+router.post('/otp/send', sendOTP);
+router.post('/otp/verify', verifyOTP);
 
 // Authenticated Routes
 router.use(authMiddleware);
