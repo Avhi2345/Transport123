@@ -49,7 +49,8 @@ export const App: React.FC = () => {
     if (mockSessionStr) {
       try {
         const mockSession = JSON.parse(mockSessionStr);
-        return { email: mockSession.user.email, role: 'admin' };
+        const role = mockSession.user.user_metadata?.role || 'admin';
+        return { email: mockSession.user.email, role };
       } catch {
         return null;
       }
@@ -123,9 +124,22 @@ export const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, [extractProfile]);
 
+  useEffect(() => {
+    const loginTimeStr = localStorage.getItem('session_login_time');
+    if (session && loginTimeStr) {
+      const loginTime = parseInt(loginTimeStr, 10);
+      const now = Date.now();
+      if (now - loginTime > 24 * 60 * 60 * 1000) {
+        handleSignOut();
+        alert('Your session has expired (24 hours limit). Please sign in again.');
+      }
+    }
+  }, [session]);
+
 
 
   const handleSignOut = async () => {
+    localStorage.removeItem('session_login_time');
     if (localStorage.getItem('mock_admin_session')) {
       localStorage.removeItem('mock_admin_session');
       setSession(null);
@@ -172,13 +186,37 @@ export const App: React.FC = () => {
           <a href="#" className="logo gradient-text">NE Explore</a>
         </header>
         <Auth onAuthSuccess={() => {
+          localStorage.setItem('session_login_time', Date.now().toString());
           const mockSessionStr = localStorage.getItem('mock_admin_session');
           if (mockSessionStr) {
             const mockSession = JSON.parse(mockSessionStr);
             setSession(mockSession);
-            setUserProfile({ email: mockSession.user.email, role: 'admin' });
+            const role = mockSession.user.user_metadata?.role || 'admin';
+            setUserProfile({ email: mockSession.user.email, role });
+            if (role === 'transport_operator') {
+              setCurrentView('dashboard');
+            } else if (role === 'admin') {
+              setCurrentView('admin-dashboard');
+            } else {
+              setSelectedBookingRef('my-bookings');
+              setCurrentView('ticket');
+            }
+          } else {
+            supabase.auth.getSession().then(({ data: { session: sess } }) => {
+              if (sess?.user) {
+                const role = sess.user.user_metadata?.role || 'traveler';
+                setUserProfile({ email: sess.user.email || '', role });
+                if (role === 'transport_operator') {
+                  setCurrentView('dashboard');
+                } else if (role === 'admin') {
+                  setCurrentView('admin-dashboard');
+                } else {
+                  setSelectedBookingRef('my-bookings');
+                  setCurrentView('ticket');
+                }
+              }
+            });
           }
-          setCurrentView('search');
         }} />
       </div>
     );
@@ -198,6 +236,18 @@ export const App: React.FC = () => {
           
           {/* Desktop Navigation */}
           <div className="desktop-nav">
+            {userProfile?.role === 'traveler' && (
+              <button 
+                onClick={() => {
+                  setSelectedBookingRef('my-bookings');
+                  setCurrentView('ticket');
+                }} 
+                className="btn btn-secondary btn-inline" 
+                style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+              >
+                My Bookings
+              </button>
+            )}
             {userProfile?.role === 'admin' && (
               <button 
                 onClick={() => setCurrentView(currentView === 'admin-dashboard' ? 'search' : 'admin-dashboard')} 
@@ -246,6 +296,19 @@ export const App: React.FC = () => {
               {userProfile?.role === 'admin' ? 'Administrator' : isOperator ? 'Fleet Operator' : 'Traveler'}
             </div>
           </div>
+
+          {userProfile?.role === 'traveler' && (
+            <button 
+              onClick={() => {
+                setSelectedBookingRef('my-bookings');
+                setCurrentView('ticket');
+                setMobileMenuOpen(false);
+              }} 
+              className="btn btn-secondary"
+            >
+              My Bookings
+            </button>
+          )}
 
           {userProfile?.role === 'admin' && (
             <button 

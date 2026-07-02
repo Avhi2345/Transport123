@@ -184,7 +184,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectTrip, onGoToDashboard, i
                 className={`btn ${filterType === 'running' ? 'btn-primary' : 'btn-secondary'}`}
                 style={{ padding: '8px 16px', fontSize: '0.875rem' }}
               >
-                Running Now ({trips.filter(t => t.status === 'departed').length})
+                Today Running ({trips.filter(t => t.status === 'departed').length})
               </button>
               <button 
                 onClick={() => setFilterType('tomorrow')} 
@@ -236,7 +236,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectTrip, onGoToDashboard, i
                     {trip.status === 'departed' && (
                       <span className="animate-pulse" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid #10b981', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                         <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399', display: 'inline-block' }}></span>
-                        Running Now
+                        Today Running
                       </span>
                     )}
                   </div>

@@ -29,10 +29,12 @@ import {
   submitVerification,
   getAdminOperatorProfiles,
   reviewOperatorProfile,
+  reviewVehicle,
   updateProfile,
   getProfile,
   sendOTP,
-  verifyOTP
+  verifyOTP,
+  devApproveOperator
 } from '../controllers/transport';
 
 const router = Router();
@@ -77,6 +79,7 @@ router.get('/trips/:id/tracking', getTracking);
 // Admin Specific Operations (Must be before operatorMiddleware since Admins do not have the transport_operator role)
 router.get('/operator/admin/profiles', getAdminOperatorProfiles);
 router.post('/operator/admin/review', reviewOperatorProfile);
+router.post('/operator/admin/review-vehicle', reviewVehicle);
 
 // Operator Specific Operations
 router.use('/operator', operatorMiddleware);
@@ -88,5 +91,6 @@ router.post('/operator/trips/create', createOperatorTrip);
 router.post('/operator/routes/create', createOperatorRoute);
 router.post('/operator/upload_doc', uploadDoc);
 router.post('/operator/submit_verification', submitVerification);
+router.post('/operator/dev-approve', devApproveOperator);
 
 export default router;

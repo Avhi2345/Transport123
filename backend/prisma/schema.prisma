@@ -1,11 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model User {
+  id                 Int                       @id @default(autoincrement())
+  username           String                    @unique
+  email              String                    @unique
+  first_name         String                    @default("")
+  last_name          String                    @default("")
+  role               UserRole                  @default(traveler)
+  phone              String?
+  is_verified        Boolean                   @default(false)
+  verification_token String?
+  reset_token        String?
+  token_created_at   DateTime?
+  profile_picture    String?
+  created_at         DateTime                  @default(now())
+  upi_id             String?
+  bank_account       String?
+  bank_ifsc          String?
+  bank_name          String?
+  account_holder     String?
+  bookings           Booking[]
+  routes             Route[]
+  operator_profile   TransportOperatorProfile?
+  vehicles           Vehicle[]
+
+  @@map("users_user")
+}
+
+model Vehicle {
+  id                  Int         @id @default(autoincrement())
+  operator_id         Int?
+  name                String
+  vehicle_type        VehicleType
+  vehicle_number      String      @unique
+  capacity            Int
+  driver_name         String
+  driver_contact      String
+  is_active           Boolean     @default(true)
+  created_at          DateTime    @default(now())
+  rc_url              String?
+  vehicle_photo_url   String?
+  verification_status String      @default("approved")
+  trips               Trip[]
+  operator            User?       @relation(fields: [operator_id], references: [id], onDelete: Cascade)
+
+  @@map("transport_vehicle")
+}
+
+model Route {
+  id                 Int         @id @default(autoincrement())
+  operator_id        Int?
+  source             String
+  destination        String
+  estimated_duration String
+  base_price         Decimal     @db.Decimal(10, 2)
+  is_active          Boolean     @default(true)
+  operator           User?       @relation(fields: [operator_id], references: [id], onDelete: Cascade)
+  stops              RouteStop[]
+  trips              Trip[]
+
+  @@map("transport_route")
+}
+
+model RouteStop {
+  id                  Int              @id @default(autoincrement())
+  route_id            Int
+  stop_name           String
+  stop_order          Int
+  distance_from_start Decimal          @default(0) @db.Decimal(10, 2)
+  price_from_source   Decimal          @db.Decimal(10, 2)
+  arrival_time_offset Int?
+  latitude            Float?
+  longitude           Float?
+  boarding_bookings   Booking[]        @relation("BoardingStop")
+  dropping_bookings   Booking[]        @relation("DroppingStop")
+  incoming_trips      LiveTripStatus[]
+  route               Route            @relation(fields: [route_id], references: [id], onDelete: Cascade)
+
+  @@unique([route_id, stop_order])
+  @@map("transport_routestop")
+}
+
+model Trip {
+  id                 Int             @id @default(autoincrement())
+  route_id           Int
+  vehicle_id         Int
+  departure_datetime DateTime
+  available_seats    Int
+  status             TripStatus      @default(scheduled)
+  created_at         DateTime        @default(now())
+  updated_at         DateTime        @updatedAt
+  bookings           Booking[]
+  live_status        LiveTripStatus?
+  route              Route           @relation(fields: [route_id], references: [id], onDelete: Cascade)
+  vehicle            Vehicle         @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
+
+  @@map("transport_trip")
+}
+
+model LiveTripStatus {
+  id                Int        @id @default(autoincrement())
+  trip_id           Int        @unique
+  current_latitude  Float
+  current_longitude Float
+  current_speed     Float      @default(0)
+  next_stop_id      Int?
+  delay_minutes     Int        @default(0)
+  last_updated      DateTime   @updatedAt
+  next_stop         RouteStop? @relation(fields: [next_stop_id], references: [id])
+  trip              Trip       @relation(fields: [trip_id], references: [id], onDelete: Cascade)
+
+  @@map("transport_livetripstatus")
+}
+
+model Booking {
+  id                    String        @id @default(uuid())
+  booking_ref           String        @unique
+  user_id               Int?
+  passenger_name        String?
+  passenger_phone       String?
+  passenger_email       String?
+  trip_id               Int
+  transaction_id        String?
+  from_stop_id          Int?
+  to_stop_id            Int?
+  from_stop_order       Int?
+  to_stop_order         Int?
+  seat_number           String
+  booking_type          BookingType
+  status                BookingStatus @default(pending)
+  price                 Decimal       @db.Decimal(10, 2)
+  segment_price         Decimal?      @db.Decimal(10, 2)
+  qr_code_data          String?
+  refund_method         RefundMethod?
+  refund_upi_id         String?
+  refund_bank_account   String?
+  refund_bank_ifsc      String?
+  refund_bank_name      String?
+  refund_account_holder String?
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
+  from_stop             RouteStop?    @relation("BoardingStop", fields: [from_stop_id], references: [id], onDelete: Restrict)
+  to_stop               RouteStop?    @relation("DroppingStop", fields: [to_stop_id], references: [id], onDelete: Restrict)
+  trip                  Trip          @relation(fields: [trip_id], references: [id], onDelete: Cascade)
+  user                  User?         @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("transport_booking")
+}
+
+model TransportOperatorProfile {
+  id                  Int       @id @default(autoincrement())
+  user_id             Int       @unique
+  operator_name       String    @default("Transport Agency")
+  phone               String?
+  address             String?
+  upi_id              String?
+  bank_details        String?
+  is_active           Boolean   @default(true)
+  verification_status String    @default("not_submitted")
+  licence_url         String?
+  rc_url              String?
+  vehicle_photo_url   String?
+  admin_notes         String?
+  submitted_at        DateTime?
+  created_at          DateTime  @default(now())
+  user                User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("transport_transportoperatorprofile")
+}
+
+model RegistrationOTP {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  otp        String
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  @@map("registration_otp")
 }
 
 enum VehicleType {
@@ -50,188 +229,4 @@ enum UserRole {
   hotel
   transport_operator
   admin
-}
-
-model User {
-  id                 Int      @id @default(autoincrement())
-  username           String   @unique // Stores the Supabase UID (UUID)
-  email              String   @unique
-  first_name         String   @default("")
-  last_name          String   @default("")
-  role               UserRole @default(traveler)
-  phone              String?
-  is_verified        Boolean  @default(false)
-  verification_token String?
-  reset_token        String?
-  token_created_at   DateTime?
-  profile_picture    String?
-  created_at         DateTime @default(now())
-
-  // Payment/Refund Details
-  upi_id             String?
-  bank_account       String?
-  bank_ifsc          String?
-  bank_name          String?
-  account_holder     String?
-
-  vehicles           Vehicle[]
-  routes             Route[]
-  bookings           Booking[]
-  operator_profile   TransportOperatorProfile?
-
-  @@map("users_user") // Match the Django default user table if tables exist, or create fresh
-}
-
-model Vehicle {
-  id             Int         @id @default(autoincrement())
-  operator_id    Int?
-  operator       User?       @relation(fields: [operator_id], references: [id], onDelete: Cascade)
-  name           String
-  vehicle_type   VehicleType
-  vehicle_number String      @unique
-  capacity       Int
-  driver_name    String
-  driver_contact String
-  is_active      Boolean     @default(true)
-  created_at     DateTime    @default(now())
-
-  trips          Trip[]
-
-  @@map("transport_vehicle")
-}
-
-model Route {
-  id                 Int         @id @default(autoincrement())
-  operator_id        Int?
-  operator           User?       @relation(fields: [operator_id], references: [id], onDelete: Cascade)
-  source             String
-  destination        String
-  estimated_duration String
-  base_price         Decimal     @db.Decimal(10, 2)
-  is_active          Boolean     @default(true)
-
-  stops              RouteStop[]
-  trips              Trip[]
-
-  @@map("transport_route")
-}
-
-model RouteStop {
-  id                  Int      @id @default(autoincrement())
-  route_id            Int
-  route               Route    @relation(fields: [route_id], references: [id], onDelete: Cascade)
-  stop_name           String
-  stop_order          Int
-  distance_from_start Decimal  @default(0) @db.Decimal(10, 2)
-  price_from_source   Decimal  @db.Decimal(10, 2)
-  arrival_time_offset Int?     // Offset in minutes from departure
-
-  latitude            Float?
-  longitude           Float?
-
-  incoming_trips      LiveTripStatus[]
-  boarding_bookings   Booking[]        @relation("BoardingStop")
-  dropping_bookings   Booking[]        @relation("DroppingStop")
-
-  @@unique([route_id, stop_order])
-  @@map("transport_routestop")
-}
-
-model Trip {
-  id                 Int         @id @default(autoincrement())
-  route_id           Int
-  route              Route       @relation(fields: [route_id], references: [id], onDelete: Cascade)
-  vehicle_id         Int
-  vehicle            Vehicle     @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
-  departure_datetime DateTime
-  available_seats    Int
-  status             TripStatus  @default(scheduled)
-  created_at         DateTime    @default(now())
-  updated_at         DateTime    @updatedAt
-
-  live_status        LiveTripStatus?
-  bookings           Booking[]
-
-  @@map("transport_trip")
-}
-
-model LiveTripStatus {
-  id                Int       @id @default(autoincrement())
-  trip_id           Int       @unique
-  trip              Trip      @relation(fields: [trip_id], references: [id], onDelete: Cascade)
-  current_latitude  Float
-  current_longitude Float
-  current_speed     Float     @default(0)
-  next_stop_id      Int?
-  next_stop         RouteStop? @relation(fields: [next_stop_id], references: [id], onDelete: SetNull)
-  delay_minutes     Int       @default(0)
-  last_updated      DateTime  @updatedAt
-
-  @@map("transport_livetripstatus")
-}
-
-model Booking {
-  id                    String        @id @default(uuid())
-  booking_ref           String        @unique
-  user_id               Int?
-  user                  User?         @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  passenger_name        String?
-  passenger_phone       String?
-  passenger_email       String?
-  trip_id               Int
-  trip                  Trip          @relation(fields: [trip_id], references: [id], onDelete: Cascade)
-  transaction_id        String?
-  from_stop_id          Int?
-  from_stop             RouteStop?    @relation("BoardingStop", fields: [from_stop_id], references: [id], onDelete: Restrict)
-  to_stop_id            Int?
-  to_stop               RouteStop?    @relation("DroppingStop", fields: [to_stop_id], references: [id], onDelete: Restrict)
-  from_stop_order       Int?
-  to_stop_order         Int?
-  seat_number           String
-  booking_type          BookingType
-  status                BookingStatus @default(pending)
-  price                 Decimal       @db.Decimal(10, 2)
-  segment_price         Decimal?      @db.Decimal(10, 2)
-  qr_code_data          String?
-  refund_method         RefundMethod?
-  refund_upi_id         String?
-  refund_bank_account   String?
-  refund_bank_ifsc      String?
-  refund_bank_name      String?
-  refund_account_holder String?
-  created_at            DateTime      @default(now())
-  updated_at            DateTime      @updatedAt
-
-  @@map("transport_booking")
-}
-
-model TransportOperatorProfile {
-  id                  Int       @id @default(autoincrement())
-  user_id             Int       @unique
-  user                User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  operator_name       String    @default("Transport Agency")
-  phone               String?
-  address             String?
-  upi_id              String?
-  bank_details        String?
-  is_active           Boolean   @default(true)
-  verification_status String    @default("not_submitted") // "not_submitted", "pending", "approved", "correction_requested"
-  licence_url         String?
-  rc_url              String?
-  vehicle_photo_url   String?
-  admin_notes         String?
-  submitted_at        DateTime?
-  created_at          DateTime  @default(now())
-
-  @@map("transport_transportoperatorprofile")
-}
-
-model RegistrationOTP {
-  id         Int      @id @default(autoincrement())
-  email      String   @unique
-  otp        String
-  expires_at DateTime
-  created_at DateTime @default(now())
-
-  @@map("registration_otp")
 }

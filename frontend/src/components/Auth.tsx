@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../services/supabaseClient';
 import { api } from '../services/api';
 
@@ -8,8 +8,27 @@ interface AuthProps {
 
 export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+
+  useEffect(() => {
+    // Check if URL contains recovery parameters
+    if (window.location.hash && window.location.hash.includes('type=recovery')) {
+      setIsRecoveryMode(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsRecoveryMode(true);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState('traveler'); // traveler or transport_operator
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,8 +42,12 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
     setMessage(null);
     setResendingOTP(true);
     try {
-      await api.post('otp/send', { email });
-      setMessage(`Verification code resent successfully to ${email}.`);
+      const res = await api.post('otp/send', { email });
+      if (res.data?.otp) {
+        setMessage(`Verification code (Mock Mode): ${res.data.otp}`);
+      } else {
+        setMessage(`Verification code resent successfully to ${email}.`);
+      }
     } catch (err: any) {
       const errorMsg = err.response?.data?.error || err.message || 'Failed to resend OTP. Please verify SMTP settings.';
       setError(errorMsg);
@@ -46,13 +69,22 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         setLoading(false);
         return;
       }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match. Please confirm your password.');
+        setLoading(false);
+        return;
+      }
     }
 
     if (isSignUp && !showOTP) {
       try {
-        await api.post('otp/send', { email });
+        const res = await api.post('otp/send', { email });
         setShowOTP(true);
-        setMessage(`Verification code sent! Please check your email inbox: ${email}.`);
+        if (res.data?.otp) {
+          setMessage(`Verification code (Mock Mode): ${res.data.otp}`);
+        } else {
+          setMessage(`Verification code sent! Please check your email inbox: ${email}.`);
+        }
       } catch (err: any) {
         const errorMsg = err.response?.data?.error || err.message || 'Failed to send OTP code. Please verify SMTP settings.';
         setError(errorMsg);
@@ -146,11 +178,77 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setMessage(null);
+    setLoading(true);
+
+    const mockEmails = ['admin@gmail.com', 'abhi@gmail.com', 'operator@gmail.com', 'traveler@gmail.com'];
+    const emailKey = email.trim().toLowerCase();
+
+    if (mockEmails.includes(emailKey)) {
+      setMessage('Mock Mode: Password reset link generated! In local testing, mock accounts have default passwords (e.g. Operator@1234, Abhi@1234, Traveler@1234). No further action is required.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/`,
+      });
+      if (resetError) throw resetError;
+      setMessage('A password reset link has been sent to your email address.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to send reset link.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setMessage(null);
+    setLoading(true);
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password,
+      });
+      if (updateError) throw updateError;
+      setMessage('Your password has been reset successfully! You can now sign in.');
+      setIsRecoveryMode(false);
+      // Clean up hash from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      setPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      setError(err.message || 'Failed to update password.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="auth-wrapper">
       <div className="glass-panel animate-fade-in auth-card">
         <h2 style={{ marginBottom: '24px', textAlign: 'center' }} className="gradient-text">
-          {showOTP ? 'Email OTP Verification' : isSignUp ? 'Create your Account' : 'Welcome Back'}
+          {isRecoveryMode 
+            ? 'Reset Your Password' 
+            : isForgotPassword 
+              ? 'Recover Password' 
+              : showOTP 
+                ? 'Email OTP Verification' 
+                : isSignUp 
+                  ? 'Create your Account' 
+                  : 'Welcome Back'}
         </h2>
         
         {error && (
@@ -165,7 +263,74 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
           </div>
         )}
 
-        {showOTP ? (
+        {isRecoveryMode ? (
+          <form onSubmit={handleUpdatePassword}>
+            <div className="form-group">
+              <label>New Password</label>
+              <input 
+                type="password" 
+                required 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                placeholder="••••••••"
+              />
+            </div>
+            <div className="form-group">
+              <label>Confirm New Password</label>
+              <input 
+                type="password" 
+                required 
+                value={confirmPassword} 
+                onChange={(e) => setConfirmPassword(e.target.value)} 
+                placeholder="••••••••"
+              />
+            </div>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '10px' }} disabled={loading}>
+              {loading ? 'Updating...' : 'Update Password'}
+            </button>
+            <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '0.875rem' }}>
+              <span 
+                onClick={() => {
+                  setIsRecoveryMode(false);
+                  window.history.replaceState({}, document.title, window.location.pathname);
+                  setError(null);
+                  setMessage(null);
+                }} 
+                style={{ color: 'var(--accent-primary)', cursor: 'pointer', fontWeight: 500 }}
+              >
+                ← Back to Login
+              </span>
+            </div>
+          </form>
+        ) : isForgotPassword ? (
+          <form onSubmit={handleForgotPassword}>
+            <div className="form-group">
+              <label>Email Address</label>
+              <input 
+                type="email" 
+                required 
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
+                placeholder="e.g. user@gmail.com"
+              />
+            </div>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '10px' }} disabled={loading}>
+              {loading ? 'Sending...' : 'Send Reset Link'}
+            </button>
+            <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '0.875rem' }}>
+              <span 
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setError(null);
+                  setMessage(null);
+                }} 
+                style={{ color: 'var(--accent-primary)', cursor: 'pointer', fontWeight: 500 }}
+              >
+                ← Back to Login
+              </span>
+            </div>
+          </form>
+        ) : showOTP ? (
           <form onSubmit={handleAuth}>
             <div className="form-group">
               <label>Enter 6-Digit Email OTP</label>
@@ -225,7 +390,34 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
                 onChange={(e) => setPassword(e.target.value)} 
                 placeholder="••••••••"
               />
+              {!isSignUp && (
+                <div style={{ textAlign: 'right', marginTop: '6px' }}>
+                  <span 
+                    onClick={() => {
+                      setIsForgotPassword(true);
+                      setError(null);
+                      setMessage(null);
+                    }} 
+                    style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', cursor: 'pointer' }}
+                  >
+                    Forgot Password?
+                  </span>
+                </div>
+              )}
             </div>
+
+            {isSignUp && (
+              <div className="form-group">
+                <label>Confirm Password</label>
+                <input 
+                  type="password" 
+                  required 
+                  value={confirmPassword} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                  placeholder="••••••••"
+                />
+              </div>
+            )}
 
             {isSignUp && (
               <div className="form-group">
@@ -243,11 +435,20 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
           </form>
         )}
 
-        {!showOTP && (
+        {!showOTP && !isForgotPassword && !isRecoveryMode && (
           <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
             {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
             <span 
-              onClick={() => setIsSignUp(!isSignUp)} 
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setEmail('');
+                setPassword('');
+                setConfirmPassword('');
+                setError(null);
+                setMessage(null);
+                setOtpCode('');
+                setShowOTP(false);
+              }}
               style={{ color: 'var(--accent-primary)', cursor: 'pointer', fontWeight: 500 }}
             >
               {isSignUp ? 'Sign In' : 'Sign Up'}

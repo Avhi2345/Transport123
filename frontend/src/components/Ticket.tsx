@@ -95,13 +95,18 @@ export const Ticket: React.FC<TicketProps> = ({ bookingRef, onBackToSearch }) =>
   const fetchBookingDetails = useCallback(async () => {
     setLoading(true);
     try {
-      const refs = bookingRef.split(',').map((r: string) => r.trim()).filter(Boolean);
-      const fetched: BookingDetails[] = [];
-      for (const ref of refs) {
-        const response = await api.get(`bookings/${ref}/`);
-        fetched.push(response.data);
+      if (bookingRef === 'my-bookings' || !bookingRef) {
+        const response = await api.get('bookings/');
+        setBookingsList(response.data);
+      } else {
+        const refs = bookingRef.split(',').map((r: string) => r.trim()).filter(Boolean);
+        const fetched: BookingDetails[] = [];
+        for (const ref of refs) {
+          const response = await api.get(`bookings/${ref}/`);
+          fetched.push(response.data);
+        }
+        setBookingsList(fetched);
       }
-      setBookingsList(fetched);
       setActiveIdx(0);
       setTrackingData(null); // Clear tracking data on reload
     } catch (err) {

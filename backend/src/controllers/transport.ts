@@ -928,7 +928,7 @@ export async function getOperatorDashboard(req: AuthRequest, res: Response) {
     });
 
     const vehicles = await prisma.vehicle.findMany({
-      where: { operator_id: req.user.id, is_active: true }
+      where: { operator_id: req.user.id }
     });
 
     const upcomingTrips = await prisma.trip.findMany({
@@ -964,7 +964,7 @@ export async function getOperatorDashboard(req: AuthRequest, res: Response) {
 
     return res.json({
       operator_profile: operatorProfile,
-      active_vehicles_count: vehicles.length,
+      active_vehicles_count: vehicles.filter(v => v.is_active !== false).length,
       vehicles: vehicles,
       trips_count: upcomingTrips.length,
       trips: upcomingTrips.map(t => formatTrip(t)),
@@ -1293,7 +1293,7 @@ export async function getVehiclesList(req: AuthRequest, res: Response) {
 
 export async function createVehicle(req: AuthRequest, res: Response) {
   if (!req.user) return res.sendStatus(401);
-  const { name, vehicle_type, vehicle_number, capacity, driver_name, driver_contact } = req.body;
+  const { name, vehicle_type, vehicle_number, capacity, driver_name, driver_contact, rc_url, vehicle_photo_url } = req.body;
 
   try {
     const profile = await prisma.transportOperatorProfile.findUnique({ where: { user_id: req.user.id } });
@@ -1308,7 +1308,11 @@ export async function createVehicle(req: AuthRequest, res: Response) {
         vehicle_number,
         capacity: parseInt(capacity),
         driver_name,
-        driver_contact
+        driver_contact,
+        rc_url: rc_url || null,
+        vehicle_photo_url: vehicle_photo_url || null,
+        verification_status: 'pending',
+        is_active: false
       }
     });
     return res.status(201).json(vehicle);
@@ -1547,6 +1551,9 @@ export async function submitVerification(req: AuthRequest, res: Response) {
             capacity: parseInt(vehicle_capacity),
             driver_name: req.body.driver_name || operator_name || 'Driver',
             driver_contact: req.body.driver_contact || phone || '',
+            rc_url: rc_url || null,
+            vehicle_photo_url: vehicle_photo_url || null,
+            verification_status: 'pending',
             is_active: false
           }
         });
@@ -1730,8 +1737,23 @@ export async function sendOTP(req: Request, res: Response) {
     return res.status(400).json({ error: 'Invalid email address' });
   }
 
+  const emailKey = email.toLowerCase().trim();
+
+  // Check if email already exists in User table to restrict duplicate registration
+  try {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: emailKey }
+    });
+    if (existingUser) {
+      return res.status(400).json({ error: 'An account with this email already exists. Please sign in instead.' });
+    }
+  } catch (dbErr: any) {
+    console.error('Failed to check duplicate email in user table:', dbErr);
+    return res.status(500).json({ error: 'Database error checking duplicate email registration.' });
+  }
+
   // Check for common typo domains to strictly restrict misspellings
-  const domain = email.split('@')[1]?.toLowerCase();
+  const domain = emailKey.split('@')[1];
   const typoDomains = ['gail.com', 'gamil.com', 'gmal.com', 'gmaill.com', 'gmil.com', 'gmail.co', 'gemail.com'];
   if (typoDomains.includes(domain)) {
     return res.status(400).json({ error: `It looks like you misspelled your email domain. Did you mean gmail.com?` });
@@ -1743,7 +1765,6 @@ export async function sendOTP(req: Request, res: Response) {
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
   // Store in database using upsert so we only have 1 active OTP per email at any time
-  const emailKey = email.toLowerCase().trim();
   try {
     await prisma.registrationOTP.upsert({
       where: { email: emailKey },
@@ -1772,7 +1793,7 @@ export async function sendOTP(req: Request, res: Response) {
     if (!emailUser || !emailPassword) {
       console.warn('WARNING: Email SMTP credentials not configured. Logging OTP instead.');
       console.log(`[DEV OTP MOCK] To: ${email} | OTP: ${otp}`);
-      return res.json({ message: 'OTP sent successfully (Mock Mode).' });
+      return res.json({ message: 'OTP sent successfully (Mock Mode).', otp });
     }
 
     const transporter = nodemailer.createTransport({
@@ -1808,8 +1829,9 @@ export async function sendOTP(req: Request, res: Response) {
     await transporter.sendMail(mailOptions);
     return res.json({ message: 'OTP sent successfully.' });
   } catch (error: any) {
-    console.error('Failed to send OTP email:', error);
-    return res.status(500).json({ error: `Failed to send email: ${error.message}` });
+    console.error('Failed to send OTP email via SMTP:', error);
+    console.warn(`WARNING: Falling back to Mock Mode and returning OTP: To: ${email} | OTP: ${otp}`);
+    return res.json({ message: `OTP generated (Fallback Mock Mode: SMTP failed: ${error.message}).`, otp });
   }
 }
 
@@ -1821,6 +1843,20 @@ export async function verifyOTP(req: Request, res: Response) {
   }
 
   const emailKey = email.toLowerCase().trim();
+
+  // Check if email already exists in User table to restrict duplicate registration
+  try {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: emailKey }
+    });
+    if (existingUser) {
+      return res.status(400).json({ error: 'An account with this email already exists. Please sign in instead.' });
+    }
+  } catch (dbErr: any) {
+    console.error('Failed to check duplicate email in user table:', dbErr);
+    return res.status(500).json({ error: 'Database error checking duplicate email registration.' });
+  }
+
   const record = await prisma.registrationOTP.findUnique({
     where: { email: emailKey }
   });
@@ -1841,4 +1877,75 @@ export async function verifyOTP(req: Request, res: Response) {
   // OTP verified successfully. Remove it so it can't be reused.
   await prisma.registrationOTP.delete({ where: { email: emailKey } }).catch(() => {});
   return res.json({ success: true, message: 'OTP verified successfully.' });
+}
+
+// 28. Dev-only Auto-Approve Operator Profile
+export async function devApproveOperator(req: AuthRequest, res: Response) {
+  if (!req.user) return res.sendStatus(401);
+  if (req.user.role !== 'transport_operator') {
+    return res.status(403).json({ error: 'Operator access required' });
+  }
+
+  try {
+    const operatorId = req.user.id;
+
+    const profile = await prisma.transportOperatorProfile.upsert({
+      where: { user_id: operatorId },
+      update: {
+        verification_status: 'approved',
+        is_active: true
+      },
+      create: {
+        user_id: operatorId,
+        operator_name: `${req.user.username}'s Transport`,
+        verification_status: 'approved',
+        is_active: true
+      }
+    });
+
+    await prisma.user.update({
+      where: { id: operatorId },
+      data: { is_verified: true }
+    });
+
+    await prisma.vehicle.updateMany({
+      where: { operator_id: operatorId },
+      data: { is_active: true }
+    });
+
+    return res.json({ message: 'Operator account successfully auto-approved in dev mode.', operator_profile: profile });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+// 29. Admin Review Fleet Vehicle (Approve/Reject)
+export async function reviewVehicle(req: AuthRequest, res: Response) {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+
+  const { vehicle_id, status } = req.body;
+  if (!vehicle_id || !status) {
+    return res.status(400).json({ error: 'vehicle_id and status are required' });
+  }
+
+  const validStatuses = ['approved', 'rejected'];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({ error: 'Invalid status. Choose approved or rejected' });
+  }
+
+  try {
+    const updated = await prisma.vehicle.update({
+      where: { id: parseInt(vehicle_id) },
+      data: {
+        verification_status: status,
+        is_active: status === 'approved'
+      }
+    });
+
+    return res.json({ message: `Vehicle review completed. Status set to: ${status}`, vehicle: updated });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
 }

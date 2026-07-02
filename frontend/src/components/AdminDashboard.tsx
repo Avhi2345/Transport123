@@ -10,6 +10,9 @@ interface Vehicle {
   driver_name: string;
   driver_contact: string;
   is_active: boolean;
+  rc_url?: string | null;
+  vehicle_photo_url?: string | null;
+  verification_status?: string | null;
 }
 
 interface OperatorProfile {
@@ -271,17 +274,113 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSearch }
                 </div>
               </div>
 
-              {/* Main Vehicle */}
+              {/* Fleet Vehicles */}
               {selectedProfile.vehicles && selectedProfile.vehicles.length > 0 && (
                 <div>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '10px' }}>Proposed Main Vehicle</h4>
-                  <div className="responsive-grid-2" style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}>
-                    <div><strong>Model:</strong> {selectedProfile.vehicles[0].name}</div>
-                    <div><strong>Plate No:</strong> {selectedProfile.vehicles[0].vehicle_number}</div>
-                    <div><strong>Type:</strong> <span style={{ textTransform: 'capitalize' }}>{selectedProfile.vehicles[0].vehicle_type}</span></div>
-                    <div><strong>Capacity:</strong> {selectedProfile.vehicles[0].capacity} Seats</div>
-                    <div><strong>Driver Name:</strong> {selectedProfile.vehicles[0].driver_name}</div>
-                    <div><strong>Driver Contact:</strong> {selectedProfile.vehicles[0].driver_contact}</div>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '14px', borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: '6px' }}>Fleet Vehicles ({selectedProfile.vehicles.length})</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '20px' }}>
+                    {selectedProfile.vehicles.map((vehicle) => (
+                      <div key={vehicle.id} style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '12px', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>{vehicle.name} ({vehicle.vehicle_number})</span>
+                          <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 600, background: (vehicle.verification_status || 'pending') === 'approved' ? 'rgba(16,185,129,0.1)' : (vehicle.verification_status || 'pending') === 'rejected' ? 'rgba(239,68,68,0.1)' : 'rgba(251,191,36,0.1)', color: (vehicle.verification_status || 'pending') === 'approved' ? '#34d399' : (vehicle.verification_status || 'pending') === 'rejected' ? '#f87171' : '#fbbf24' }}>
+                              {(vehicle.verification_status || 'pending').toUpperCase()}
+                            </span>
+                            <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 600, background: vehicle.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)', color: vehicle.is_active ? '#34d399' : 'var(--text-muted)' }}>
+                              {vehicle.is_active ? 'ACTIVE' : 'INACTIVE'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="responsive-grid-2" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '12px', gap: '10px' }}>
+                          <div><strong>Type:</strong> <span style={{ textTransform: 'capitalize' }}>{vehicle.vehicle_type}</span></div>
+                          <div><strong>Capacity:</strong> {vehicle.capacity} Seats</div>
+                          <div><strong>Driver:</strong> {vehicle.driver_name}</div>
+                          <div><strong>Driver Contact:</strong> {vehicle.driver_contact}</div>
+                        </div>
+
+                        {/* Document previews for individual vehicle */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px', marginTop: '10px', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '10px' }}>
+                          <div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>RC Document</div>
+                            {vehicle.rc_url ? (
+                              <a href={getDocFullUrl(vehicle.rc_url)} target="_blank" rel="noreferrer">
+                                <img
+                                  src={getDocFullUrl(vehicle.rc_url)}
+                                  alt="RC Preview"
+                                  style={{ width: '100%', maxHeight: '80px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--border-color)' }}
+                                />
+                              </a>
+                            ) : <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No RC uploaded</span>}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Vehicle Photo</div>
+                            {vehicle.vehicle_photo_url ? (
+                              <a href={getDocFullUrl(vehicle.vehicle_photo_url)} target="_blank" rel="noreferrer">
+                                <img
+                                  src={getDocFullUrl(vehicle.vehicle_photo_url)}
+                                  alt="Vehicle Preview"
+                                  style={{ width: '100%', maxHeight: '80px', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--border-color)' }}
+                                />
+                              </a>
+                            ) : <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No Photo uploaded</span>}
+                          </div>
+                        </div>
+
+                        {/* Admin Action for Vehicle */}
+                        {(vehicle.verification_status || 'pending') !== 'approved' && (
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '12px', justifyContent: 'flex-end' }}>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await api.post('operator/admin/review-vehicle/', {
+                                    vehicle_id: vehicle.id,
+                                    status: 'approved'
+                                  });
+                                  alert('Vehicle approved successfully!');
+                                  // Refresh profiles list and selection
+                                  const response = await api.get('operator/admin/profiles/');
+                                  setProfiles(response.data);
+                                  const updatedProfile = response.data.find((p: any) => p.user_id === selectedProfile.user_id);
+                                  if (updatedProfile) setSelectedProfile(updatedProfile);
+                                } catch (err) {
+                                  console.error(err);
+                                  alert('Failed to approve vehicle');
+                                }
+                              }}
+                              className="btn btn-primary btn-inline"
+                              style={{ padding: '6px 12px', fontSize: '0.75rem', margin: 0, background: '#10b981', borderColor: '#10b981' }}
+                            >
+                              Approve Vehicle
+                            </button>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await api.post('operator/admin/review-vehicle/', {
+                                    vehicle_id: vehicle.id,
+                                    status: 'rejected'
+                                  });
+                                  alert('Vehicle rejected successfully!');
+                                  // Refresh profiles list and selection
+                                  const response = await api.get('operator/admin/profiles/');
+                                  setProfiles(response.data);
+                                  const updatedProfile = response.data.find((p: any) => p.user_id === selectedProfile.user_id);
+                                  if (updatedProfile) setSelectedProfile(updatedProfile);
+                                } catch (err) {
+                                  console.error(err);
+                                  alert('Failed to reject vehicle');
+                                }
+                              }}
+                              className="btn btn-secondary btn-inline"
+                              style={{ padding: '6px 12px', fontSize: '0.75rem', margin: 0, color: '#f87171', borderColor: '#ef4444' }}
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -297,30 +396,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBackToSearch }
                         <img
                           src={getDocFullUrl(selectedProfile.licence_url)}
                           alt="Licence Preview"
-                          style={{ width: '100%', maxHeight: '110px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-color)', cursor: 'zoom-in' }}
-                        />
-                      </a>
-                    ) : <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Not Uploaded</span>}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px' }}>Vehicle RC</div>
-                    {selectedProfile.rc_url ? (
-                      <a href={getDocFullUrl(selectedProfile.rc_url)} target="_blank" rel="noreferrer">
-                        <img
-                          src={getDocFullUrl(selectedProfile.rc_url)}
-                          alt="RC Preview"
-                          style={{ width: '100%', maxHeight: '110px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-color)', cursor: 'zoom-in' }}
-                        />
-                      </a>
-                    ) : <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Not Uploaded</span>}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px' }}>Vehicle Photo</div>
-                    {selectedProfile.vehicle_photo_url ? (
-                      <a href={getDocFullUrl(selectedProfile.vehicle_photo_url)} target="_blank" rel="noreferrer">
-                        <img
-                          src={getDocFullUrl(selectedProfile.vehicle_photo_url)}
-                          alt="Vehicle Preview"
                           style={{ width: '100%', maxHeight: '110px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-color)', cursor: 'zoom-in' }}
                         />
                       </a>
