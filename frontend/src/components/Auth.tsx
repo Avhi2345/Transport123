@@ -268,6 +268,7 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             <div className="form-group">
               <label>New Password</label>
               <input 
+                key="recovery-new-password"
                 type="password" 
                 required 
                 value={password} 
@@ -278,6 +279,7 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             <div className="form-group">
               <label>Confirm New Password</label>
               <input 
+                key="recovery-confirm-password"
                 type="password" 
                 required 
                 value={confirmPassword} 
@@ -307,6 +309,7 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             <div className="form-group">
               <label>Email Address</label>
               <input 
+                key="forgot-password-email"
                 type="email" 
                 required 
                 value={email} 
@@ -373,6 +376,7 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             <div className="form-group">
               <label>{isSignUp ? 'Email Address' : 'Email Address / Username'}</label>
               <input 
+                key={isSignUp ? 'signup-email' : 'signin-username'}
                 type={isSignUp ? 'email' : 'text'} 
                 required 
                 value={email} 
@@ -384,6 +388,7 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             <div className="form-group">
               <label>Password</label>
               <input 
+                key={isSignUp ? 'signup-password' : 'signin-password'}
                 type="password" 
                 required 
                 value={password} 
@@ -410,6 +415,7 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
               <div className="form-group">
                 <label>Confirm Password</label>
                 <input 
+                  key="signup-confirm-password"
                   type="password" 
                   required 
                   value={confirmPassword} 
