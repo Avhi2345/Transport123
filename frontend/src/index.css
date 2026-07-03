@@ -539,39 +539,235 @@ header {
   grid-column: span 2;
 }
 
+/* ===========================
+   AUTH PAGE - ANIMATED BACKGROUND
+   =========================== */
+
+/* Full-screen container for auth pages */
+.auth-page-fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* NE Explore logo overlaying the animation */
+.auth-logo-overlay {
+  position: absolute;
+  top: 24px;
+  left: 32px;
+  z-index: 10;
+  text-align: left;
+}
+
 .auth-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 80vh;
+  min-height: 100vh;
   width: 100%;
   padding: 40px 20px;
   position: relative;
   overflow: hidden;
-  border-radius: 20px;
+  /* Deep navy-to-blue travel gradient base */
+  background: linear-gradient(135deg, #0b1f44 0%, #0f3460 30%, #1a237e 60%, #0b1f44 100%);
 }
 
-.auth-bg-video {
+/* Dark overlay for readability */
+.auth-wrapper::before {
+  content: '';
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(37,99,235,0.18) 0%, transparent 70%);
+  z-index: 0;
+}
+
+/* The animated background container */
+.auth-bg-animated {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* ---- Glowing Orbs ---- */
+.auth-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+  animation: authOrbDrift 12s ease-in-out infinite alternate;
+}
+
+.auth-orb-1 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, #2563eb 0%, #1d4ed8 50%, transparent 70%);
+  top: -150px;
+  left: -100px;
+  animation-duration: 14s;
+  animation-delay: 0s;
+}
+
+.auth-orb-2 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #10b981 0%, #059669 50%, transparent 70%);
+  bottom: -120px;
+  right: -80px;
+  animation-duration: 18s;
+  animation-delay: -4s;
+  opacity: 0.25;
+}
+
+.auth-orb-3 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, #6366f1 0%, #4f46e5 50%, transparent 70%);
+  top: 50%;
+  left: 60%;
+  animation-duration: 10s;
+  animation-delay: -7s;
+  opacity: 0.2;
+}
+
+@keyframes authOrbDrift {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(40px, -30px) scale(1.08); }
+  66%  { transform: translate(-20px, 20px) scale(0.95); }
+  100% { transform: translate(30px, 10px) scale(1.05); }
+}
+
+/* ---- SVG Route Lines ---- */
+.auth-route-svg {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.6;
 }
 
+.auth-route-line {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.auth-rl-1 {
+  stroke: rgba(37,99,235,0.25);
+  stroke-dasharray: 2000;
+  stroke-dashoffset: 2000;
+  animation: authDrawLine 8s ease-in-out infinite;
+}
+
+.auth-rl-2 {
+  stroke: rgba(16,185,129,0.18);
+  stroke-dasharray: 2000;
+  stroke-dashoffset: 2000;
+  animation: authDrawLine 10s ease-in-out 2s infinite;
+}
+
+.auth-rl-3 {
+  stroke: rgba(99,102,241,0.15);
+  stroke-dasharray: 2000;
+  stroke-dashoffset: 2000;
+  animation: authDrawLine 12s ease-in-out 4s infinite;
+}
+
+@keyframes authDrawLine {
+  0%   { stroke-dashoffset: 2000; opacity: 0; }
+  10%  { opacity: 1; }
+  60%  { stroke-dashoffset: 0; opacity: 0.8; }
+  85%  { stroke-dashoffset: 0; opacity: 0; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+/* ---- Floating Travel Particles ---- */
+.auth-particle {
+  position: absolute;
+  font-size: 1.4rem;
+  opacity: 0;
+  animation: authFloatUp 8s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(37,99,235,0.4));
+}
+
+.auth-p1 { left: 10%;  animation-delay: 0s;   animation-duration: 9s;  }
+.auth-p2 { left: 25%;  animation-delay: 1.5s; animation-duration: 11s; font-size: 1.6rem; }
+.auth-p3 { left: 45%;  animation-delay: 3s;   animation-duration: 8s;  }
+.auth-p4 { left: 65%;  animation-delay: 4.5s; animation-duration: 13s; }
+.auth-p5 { left: 80%;  animation-delay: 2s;   animation-duration: 10s; font-size: 1.5rem; }
+
+@keyframes authFloatUp {
+  0%   { transform: translateY(110vh) rotate(0deg);  opacity: 0; }
+  10%  { opacity: 0.7; }
+  80%  { opacity: 0.5; }
+  100% { transform: translateY(-10vh) rotate(20deg); opacity: 0; }
+}
+
+/* ---- Auth Card — Glassmorphism on dark bg ---- */
 .auth-card {
   padding: 40px;
   width: 100%;
-  max-width: 450px;
-  background: #ffffff !important;
+  max-width: 460px;
+  /* Glass effect */
+  background: rgba(255, 255, 255, 0.96) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
   position: relative;
   z-index: 2;
-  box-shadow: var(--shadow-xl);
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255,255,255,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.9);
 }
+
+/* Auth card titles stay dark */
+.auth-card h2 {
+  color: #0f172a !important;
+  -webkit-text-fill-color: initial !important;
+  background: linear-gradient(135deg, #0f172a 0%, #2563eb 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Auth card inputs */
+.auth-card input,
+.auth-card select {
+  background: #f8fafc !important;
+  border: 1.5px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.auth-card input:focus,
+.auth-card select:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.12) !important;
+}
+
+/* Auth card labels stay readable */
+.auth-card label {
+  color: #64748b !important;
+}
+
+/* Auth toggle link */
+.auth-toggle-link {
+  color: #2563eb;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.auth-toggle-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+
 
 .modal-overlay {
   position: fixed;

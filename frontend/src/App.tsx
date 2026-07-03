@@ -181,10 +181,14 @@ export const App: React.FC = () => {
   // If not signed in, show Auth Screen
   if (!session) {
     return (
-      <div className="app-container">
-        <header>
-          <a href="#" className="logo gradient-text">NE Explore</a>
-        </header>
+      <div className="auth-page-fullscreen">
+        {/* Logo overlay on top of animated background */}
+        <div className="auth-logo-overlay">
+          <a href="#" className="logo" style={{ color: '#ffffff', fontSize: '1.5rem', letterSpacing: '-0.03em', fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '1.4rem' }}>🚌</span> NE Explore
+          </a>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', marginTop: '4px' }}>India's Trusted Transport Platform</p>
+        </div>
         <Auth onAuthSuccess={() => {
           localStorage.setItem('session_login_time', Date.now().toString());
           const mockSessionStr = localStorage.getItem('mock_admin_session');
@@ -221,6 +225,7 @@ export const App: React.FC = () => {
       </div>
     );
   }
+
 
   const isOperator = userProfile?.role === 'transport_operator';
 
