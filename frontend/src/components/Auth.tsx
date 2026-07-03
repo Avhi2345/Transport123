@@ -238,6 +238,15 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
 
   return (
     <div className="auth-wrapper">
+      <video 
+        autoPlay 
+        loop 
+        muted 
+        playsInline 
+        className="auth-bg-video"
+      >
+        <source src="https://assets.mixkit.co/videos/preview/mixkit-driving-on-a-highway-in-a-forest-42861-large.mp4" type="video/mp4" />
+      </video>
       <div className="glass-panel animate-fade-in auth-card">
         <h2 style={{ marginBottom: '24px', textAlign: 'center' }} className="gradient-text">
           {isRecoveryMode 

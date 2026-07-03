@@ -543,9 +543,24 @@ header {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 70vh;
+  min-height: 80vh;
   width: 100%;
-  padding: 20px;
+  padding: 40px 20px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.auth-bg-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.6;
 }
 
 .auth-card {
@@ -553,6 +568,9 @@ header {
   width: 100%;
   max-width: 450px;
   background: #ffffff !important;
+  position: relative;
+  z-index: 2;
+  box-shadow: var(--shadow-xl);
 }
 
 .modal-overlay {
@@ -1005,6 +1023,7 @@ div[style*="background: rgba(255, 255, 255, 0.02)"] {
   transform: translateY(60px);
   position: relative;
   z-index: 10;
+  margin-bottom: 80px;
 }
 
 .benefit-item {

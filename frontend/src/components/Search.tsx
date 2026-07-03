@@ -108,10 +108,10 @@ export const Search: React.FC<SearchProps> = ({ onSelectTrip, onGoToDashboard, i
         <div className="home-hero-banner">
           <div className="home-hero-header">
             <h1 style={{ fontSize: '3.5rem', fontWeight: 800, marginBottom: '16px', color: '#ffffff', textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>
-              Travel the North East<br/>with Comfort & Safety
+              Travel India<br/>with Comfort & Safety
             </h1>
             <p style={{ fontSize: '1.15rem', color: 'rgba(255,255,255,0.95)', marginBottom: '40px', maxWidth: '640px', margin: '0 auto 40px auto', lineHeight: '1.6', textShadow: '0 1px 5px rgba(0,0,0,0.2)' }}>
-              Book buses, taxis and shared rides across Assam and North East India. Trusted by thousands of travelers every day.
+              Book buses, taxis and shared rides across Assam and all of India. Trusted by thousands of travelers every day.
             </p>
           </div>
 
