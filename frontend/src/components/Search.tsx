@@ -104,68 +104,178 @@ export const Search: React.FC<SearchProps> = ({ onSelectTrip, onGoToDashboard, i
 
   return (
     <div className="animate-fade-in">
-      <div className="responsive-flex-header">
-        <div>
-          <h1 className="gradient-text" style={{ fontSize: '2.5rem', marginBottom: '8px' }}>Find Your Adventure</h1>
-          <p style={{ color: 'var(--text-muted)' }}>Explore North-East India with reliable local transport</p>
+      {!searched ? (
+        <div className="home-hero-banner">
+          <div className="home-hero-header">
+            <h1 style={{ fontSize: '3.5rem', fontWeight: 800, marginBottom: '16px', color: '#ffffff', textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>
+              Travel the North East<br/>with Comfort & Safety
+            </h1>
+            <p style={{ fontSize: '1.15rem', color: 'rgba(255,255,255,0.95)', marginBottom: '40px', maxWidth: '640px', margin: '0 auto 40px auto', lineHeight: '1.6', textShadow: '0 1px 5px rgba(0,0,0,0.2)' }}>
+              Book buses, taxis and shared rides across Assam and North East India. Trusted by thousands of travelers every day.
+            </p>
+          </div>
+
+          <div className="glass-panel search-card-floating" style={{ padding: '30px', background: '#ffffff', border: 'none', boxShadow: 'var(--shadow-xl)' }}>
+            <form onSubmit={handleSearch} className="search-form-grid">
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label style={{ color: 'var(--text-muted)' }}>From</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={source} 
+                  onChange={(e) => setSource(e.target.value)} 
+                  placeholder="e.g. Guwahati"
+                  style={{ background: '#f8fafc' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label style={{ color: 'var(--text-muted)' }}>To</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={destination} 
+                  onChange={(e) => setDestination(e.target.value)} 
+                  placeholder="e.g. Shillong"
+                  style={{ background: '#f8fafc' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label style={{ color: 'var(--text-muted)' }}>Date (Optional)</label>
+                <input 
+                  type="date" 
+                  value={date} 
+                  min={getLocalDateString()}
+                  onChange={(e) => setDate(e.target.value)} 
+                  style={{ background: '#f8fafc' }}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label style={{ color: 'var(--text-muted)' }}>Vehicle Type</label>
+                <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} style={{ background: '#f8fafc' }}>
+                  <option value="">Any Vehicle</option>
+                  <option value="sumo">Tata Sumo</option>
+                  <option value="traveller">Force Traveller</option>
+                  <option value="bus">Bus</option>
+                  <option value="taxi">Local Taxi</option>
+                </select>
+              </div>
+
+              <button type="submit" className="btn btn-primary" style={{ height: '48px' }}>
+                {loading ? 'Searching...' : 'Search'}
+              </button>
+            </form>
+          </div>
+
+          {/* Benefits Grid */}
+          <div className="benefits-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginTop: '40px' }}>
+            <div className="glass-panel benefit-item" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', background: '#ffffff' }}>
+              <span style={{ fontSize: '1.5rem' }}>🛡️</span>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Verified Operators</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Trusted & verified</div>
+              </div>
+            </div>
+            <div className="glass-panel benefit-item" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', background: '#ffffff' }}>
+              <span style={{ fontSize: '1.5rem' }}>📍</span>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Live Tracking</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Real-time vehicle tracking</div>
+              </div>
+            </div>
+            <div className="glass-panel benefit-item" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', background: '#ffffff' }}>
+              <span style={{ fontSize: '1.5rem' }}>💳</span>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Secure Payments</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>100% secure payments</div>
+              </div>
+            </div>
+            <div className="glass-panel benefit-item" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px', background: '#ffffff' }}>
+              <span style={{ fontSize: '1.5rem' }}>📞</span>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>24/7 Support</div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>We are here to help</div>
+              </div>
+            </div>
+          </div>
+
+          {isOperator && (
+            <div style={{ marginTop: '30px', textAlign: 'center' }}>
+              <button onClick={onGoToDashboard} className="btn btn-secondary">
+                Go to Operator Dashboard
+              </button>
+            </div>
+          )}
         </div>
-        {isOperator && (
-          <button onClick={onGoToDashboard} className="btn btn-secondary btn-inline">
-            Go to Operator Dashboard
-          </button>
-        )}
-      </div>
-
-      <div className="glass-panel" style={{ padding: '30px', marginBottom: '40px' }}>
-        <form onSubmit={handleSearch} className="search-form-grid">
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label>From</label>
-            <input 
-              type="text" 
-              required 
-              value={source} 
-              onChange={(e) => setSource(e.target.value)} 
-              placeholder="e.g. Guwahati"
-            />
+      ) : (
+        <>
+          <div className="responsive-flex-header">
+            <div>
+              <h1 className="gradient-text" style={{ fontSize: '2.5rem', marginBottom: '8px' }}>Available Rides</h1>
+              <p style={{ color: 'var(--text-muted)' }}>Guwahati to Shillong • Select your preferred ride</p>
+            </div>
+            <button onClick={() => setSearched(false)} className="btn btn-secondary btn-inline">
+              Modify Search
+            </button>
           </div>
 
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label>To</label>
-            <input 
-              type="text" 
-              required 
-              value={destination} 
-              onChange={(e) => setDestination(e.target.value)} 
-              placeholder="e.g. Shillong"
-            />
-          </div>
+          <div className="glass-panel" style={{ padding: '30px', marginBottom: '40px', background: '#ffffff' }}>
+            <form onSubmit={handleSearch} className="search-form-grid">
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>From</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={source} 
+                  onChange={(e) => setSource(e.target.value)} 
+                  placeholder="e.g. Guwahati"
+                  style={{ background: '#f8fafc' }}
+                />
+              </div>
 
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label>Date (Optional)</label>
-            <input 
-              type="date" 
-              value={date} 
-              min={getLocalDateString()}
-              onChange={(e) => setDate(e.target.value)} 
-            />
-          </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>To</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={destination} 
+                  onChange={(e) => setDestination(e.target.value)} 
+                  placeholder="e.g. Shillong"
+                  style={{ background: '#f8fafc' }}
+                />
+              </div>
 
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label>Vehicle Type</label>
-            <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)}>
-              <option value="">Any Vehicle</option>
-              <option value="sumo">Tata Sumo</option>
-              <option value="traveller">Force Traveller</option>
-              <option value="bus">Bus</option>
-              <option value="taxi">Local Taxi</option>
-            </select>
-          </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>Date (Optional)</label>
+                <input 
+                  type="date" 
+                  value={date} 
+                  min={getLocalDateString()}
+                  onChange={(e) => setDate(e.target.value)} 
+                  style={{ background: '#f8fafc' }}
+                />
+              </div>
 
-          <button type="submit" className="btn btn-primary" style={{ height: '48px' }}>
-            {loading ? 'Searching...' : 'Search Rides'}
-          </button>
-        </form>
-      </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label>Vehicle Type</label>
+                <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} style={{ background: '#f8fafc' }}>
+                  <option value="">Any Vehicle</option>
+                  <option value="sumo">Tata Sumo</option>
+                  <option value="traveller">Force Traveller</option>
+                  <option value="bus">Bus</option>
+                  <option value="taxi">Local Taxi</option>
+                </select>
+              </div>
+
+              <button type="submit" className="btn btn-primary" style={{ height: '48px' }}>
+                {loading ? 'Searching...' : 'Search'}
+              </button>
+            </form>
+          </div>
+        </>
+      )}
 
       {/* Advanced Filter Bar for Search Results */}
       {searched && !loading && trips.length > 0 && (

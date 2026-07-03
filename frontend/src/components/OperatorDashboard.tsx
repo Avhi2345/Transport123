@@ -724,7 +724,7 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
   }
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in operator-dashboard-layout">
       
       {/* Dashboard Nav Header */}
       <div className="responsive-flex-header">

@@ -228,7 +228,7 @@ export const App: React.FC = () => {
     <div className="app-container">
       
       {/* App Header */}
-      <header className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: mobileMenuOpen ? '20px' : '0px', padding: '16px 24px', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '40px' }}>
+      <header className="app-header" style={{ display: 'flex', flexDirection: 'column', gap: mobileMenuOpen ? '20px' : '0px', marginBottom: '40px' }}>
         
         {/* Header Top Bar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
