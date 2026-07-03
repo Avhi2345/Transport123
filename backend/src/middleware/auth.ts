@@ -22,8 +22,10 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
 
   const token = parts[1];
 
+  const isDevOrTest = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || !process.env.NODE_ENV;
+
   // Intercept Mock Admin login for developer testing
-  if (token === 'mock-admin-token') {
+  if (isDevOrTest && token === 'mock-admin-token') {
     let user = await prisma.user.findUnique({
       where: { username: 'admin-uuid-abhi' }
     });
@@ -42,7 +44,7 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
   }
 
   // Intercept Mock Operator login for developer testing
-  if (token === 'mock-operator-token') {
+  if (isDevOrTest && token === 'mock-operator-token') {
     let user = await prisma.user.findUnique({
       where: { username: 'operator-uuid-mock' }
     });
@@ -73,7 +75,7 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
   }
 
   // Intercept Mock Traveler login for developer testing
-  if (token === 'mock-traveler-token') {
+  if (isDevOrTest && token === 'mock-traveler-token') {
     let user = await prisma.user.findUnique({
       where: { username: 'traveler-uuid-mock' }
     });

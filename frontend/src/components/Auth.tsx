@@ -374,8 +374,9 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
         ) : (
           <form onSubmit={handleAuth}>
             <div className="form-group">
-              <label>{isSignUp ? 'Email Address' : 'Email Address / Username'}</label>
+              <label htmlFor="auth-email">{isSignUp ? 'Email Address' : 'Email Address / Username'}</label>
               <input 
+                id="auth-email"
                 key={isSignUp ? 'signup-email' : 'signin-username'}
                 type={isSignUp ? 'email' : 'text'} 
                 required 
@@ -386,8 +387,9 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
             </div>
 
             <div className="form-group">
-              <label>Password</label>
+              <label htmlFor="auth-password">Password</label>
               <input 
+                id="auth-password"
                 key={isSignUp ? 'signup-password' : 'signin-password'}
                 type="password" 
                 required 
@@ -413,8 +415,9 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
 
             {isSignUp && (
               <div className="form-group">
-                <label>Confirm Password</label>
+                <label htmlFor="auth-confirm-password">Confirm Password</label>
                 <input 
+                  id="auth-confirm-password"
                   key="signup-confirm-password"
                   type="password" 
                   required 

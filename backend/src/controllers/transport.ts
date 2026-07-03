@@ -1470,7 +1470,11 @@ export async function uploadDoc(req: AuthRequest, res: Response) {
     }
 
     const buffer = Buffer.from(base64Data, 'base64');
-    const ext = path.extname(file_name) || '.jpg';
+    const ext = path.extname(file_name).toLowerCase();
+    const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf'];
+    if (!allowedExtensions.includes(ext)) {
+      return res.status(400).json({ error: 'Invalid file extension. Only JPG, JPEG, PNG, and PDF files are allowed.' });
+    }
     const uniqueName = `${doc_type}-${req.user.id}-${Date.now()}${ext}`;
     const filePath = path.join(dirPath, uniqueName);
 
@@ -1835,6 +1839,8 @@ export async function sendOTP(req: Request, res: Response) {
   }
 }
 
+const failedOtpAttempts = new Map<string, { count: number; lockUntil: number }>();
+
 // 27. Verify Email Verification OTP
 export async function verifyOTP(req: Request, res: Response) {
   const { email, otp } = req.body;
@@ -1843,6 +1849,13 @@ export async function verifyOTP(req: Request, res: Response) {
   }
 
   const emailKey = email.toLowerCase().trim();
+  const nowTime = Date.now();
+  const attempt = failedOtpAttempts.get(emailKey);
+
+  if (attempt && attempt.lockUntil > nowTime) {
+    const waitMins = Math.ceil((attempt.lockUntil - nowTime) / 60000);
+    return res.status(429).json({ error: `Too many failed attempts. Locked out. Please wait ${waitMins} minute(s).` });
+  }
 
   // Check if email already exists in User table to restrict duplicate registration
   try {
@@ -1871,10 +1884,18 @@ export async function verifyOTP(req: Request, res: Response) {
   }
 
   if (record.otp !== otp.trim()) {
-    return res.status(400).json({ error: 'Invalid OTP code. Please try again.' });
+    const currentAttempts = (attempt?.count || 0) + 1;
+    if (currentAttempts >= 5) {
+      failedOtpAttempts.set(emailKey, { count: currentAttempts, lockUntil: nowTime + 15 * 60 * 1000 }); // lock for 15 mins
+      return res.status(429).json({ error: 'Too many failed attempts. Verification locked for 15 minutes.' });
+    } else {
+      failedOtpAttempts.set(emailKey, { count: currentAttempts, lockUntil: 0 });
+      return res.status(400).json({ error: `Invalid OTP code. ${5 - currentAttempts} attempt(s) remaining.` });
+    }
   }
 
   // OTP verified successfully. Remove it so it can't be reused.
+  failedOtpAttempts.delete(emailKey);
   await prisma.registrationOTP.delete({ where: { email: emailKey } }).catch(() => {});
   return res.json({ success: true, message: 'OTP verified successfully.' });
 }
