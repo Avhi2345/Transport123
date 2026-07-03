@@ -51,7 +51,7 @@ model Vehicle {
   verification_status String      @default("approved")
   trips               Trip[]
   operator            User?       @relation(fields: [operator_id], references: [id], onDelete: Cascade)
-
+  @@index([operator_id])
   @@map("transport_vehicle")
 }
 
@@ -67,6 +67,7 @@ model Route {
   stops              RouteStop[]
   trips              Trip[]
 
+  @@index([operator_id])
   @@map("transport_route")
 }
 
@@ -103,6 +104,8 @@ model Trip {
   route              Route           @relation(fields: [route_id], references: [id], onDelete: Cascade)
   vehicle            Vehicle         @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
 
+  @@index([route_id])
+  @@index([vehicle_id])
   @@map("transport_trip")
 }
 
@@ -153,6 +156,10 @@ model Booking {
   trip                  Trip          @relation(fields: [trip_id], references: [id], onDelete: Cascade)
   user                  User?         @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
+  @@index([trip_id])
+  @@index([user_id])
+  @@index([from_stop_id])
+  @@index([to_stop_id])
   @@map("transport_booking")
 }
 

@@ -195,7 +195,8 @@ describe('Transport System API Endpoints', () => {
         },
       ]);
 
-      const todayStr = new Date().toISOString().split('T')[0];
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       const res = await request(app)
         .get('/api/transport/trips/search')
         .query({ source: 'Guwahati', destination: 'Shillong', date: todayStr });
