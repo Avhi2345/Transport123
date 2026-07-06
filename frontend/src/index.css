@@ -1512,3 +1512,231 @@ div[style*="background: rgba(255, 255, 255, 0.02)"] {
     transition: none !important;
   }
 }
+
+/* ============================================================
+   OPERATOR CONSOLE - VISUAL REDESIGN (MATCH REFERENCE)
+   ============================================================ */
+
+/* Top bar alignment for header details */
+.dashboard-header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.dashboard-header-icon-btn {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashboard-header-icon-btn .badge-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 6px;
+  background: var(--danger);
+  border-radius: 50%;
+}
+
+.dashboard-user-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dashboard-user-profile-badge img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--border-color);
+}
+
+.dashboard-user-profile-badge .user-meta {
+  text-align: left;
+  line-height: 1.2;
+}
+
+.dashboard-user-profile-badge .user-meta .name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-main);
+}
+
+.dashboard-user-profile-badge .user-meta .role {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Sidebar branding section */
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-logo strong {
+  font-family: var(--font-heading);
+  color: #ffffff;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+/* Dashboard welcome card banner */
+.dashboard-welcome-card {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  border: none !important;
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 30px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: var(--shadow-md);
+}
+
+.dashboard-welcome-card .banner-text {
+  text-align: left;
+  z-index: 2;
+}
+
+.dashboard-welcome-card .banner-text h3 {
+  font-size: 1.5rem;
+  color: #0369a1 !important;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.dashboard-welcome-card .banner-badge {
+  background: #0ea5e9;
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dashboard-welcome-card .banner-bus-img {
+  max-width: 180px;
+  height: auto;
+  z-index: 2;
+  border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+  .dashboard-welcome-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+    gap: 16px;
+  }
+  .dashboard-welcome-card .banner-bus-img {
+    max-width: 100%;
+    align-self: center;
+  }
+}
+
+/* Donut chart legend container */
+.donut-container {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.donut-legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.donut-legend-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.donut-legend-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+
+.donut-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.donut-legend-value {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+@media (max-width: 480px) {
+  .donut-container {
+    flex-direction: column;
+    gap: 20px;
+  }
+}
+
+/* Hide global app header when inside operator console to match the design */
+.app-container:has(.operator-dashboard-layout) .app-header {
+  display: none !important;
+}
+
+/* Responsive grid layout for the welcome card + 4 stats cards */
+.responsive-grid-5 {
+  display: grid;
+  grid-template-columns: 1.2fr repeat(4, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 1200px) {
+  .responsive-grid-5 {
+    grid-template-columns: 1.2fr 1fr 1fr !important;
+    grid-template-rows: auto auto !important;
+  }
+  /* make welcome card take full row width */
+  .responsive-grid-5 > :first-child {
+    grid-column: span 3 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .responsive-grid-5 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .responsive-grid-5 > :first-child {
+    grid-column: span 2 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .responsive-grid-5 {
+    grid-template-columns: 1fr !important;
+  }
+  .responsive-grid-5 > :first-child {
+    grid-column: span 1 !important;
+  }
+}
+
