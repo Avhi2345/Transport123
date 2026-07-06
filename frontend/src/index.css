@@ -56,12 +56,17 @@ body {
   color: var(--text-main);
   font-family: var(--font-family);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport for mobile browsers with UI chrome */
   overflow-x: hidden;
   position: relative;
   background-image: 
     radial-gradient(at 0% 0%, rgba(37, 99, 235, 0.03) 0px, transparent 50%),
     radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.02) 0px, transparent 50%);
+  /* Safe area insets for notched/island phones */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* Scrollbar Styling */
@@ -226,6 +231,9 @@ input:focus, select:focus, textarea:focus {
   max-width: 1280px;
   margin: 0 auto;
   padding: 40px 24px;
+  /* Respect safe-area on sides for notch/island phones */
+  padding-left: max(24px, env(safe-area-inset-left));
+  padding-right: max(24px, env(safe-area-inset-right));
 }
 
 header {
@@ -395,6 +403,18 @@ header {
   gap: 20px;
 }
 
+/* Tablet: collapse 4-col grids to 2-col */
+@media (max-width: 1024px) {
+  .responsive-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+  .responsive-grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+}
+
 /* Mobile responsive menu */
 .desktop-nav {
   display: flex;
@@ -549,8 +569,10 @@ header {
   inset: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   z-index: 9999;
   overflow: hidden;
+  overflow-y: auto;
 }
 
 /* NE Explore logo overlaying the animation */
@@ -567,8 +589,9 @@ header {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
-  padding: 40px 20px;
+  padding: 80px 20px 40px; /* top padding accounts for logo overlay */
   position: relative;
   overflow: hidden;
   /* Deep navy-to-blue travel gradient base */
@@ -718,6 +741,8 @@ header {
   border: 1px solid rgba(255, 255, 255, 0.7) !important;
   position: relative;
   z-index: 2;
+  /* Ensure card never overflows on tiny phones */
+  box-sizing: border-box;
   box-shadow: 
     0 25px 50px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(255,255,255,0.15),
@@ -816,17 +841,26 @@ header {
   }
 
   .auth-wrapper {
-    padding: 10px;
-    min-height: 60vh;
+    padding: 70px 16px 32px;
+    align-items: flex-start;
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
   }
 
   .auth-card {
-    padding: 24px 20px !important;
+    padding: 28px 20px !important;
+    border-radius: 16px !important;
+    max-width: 100% !important;
+  }
+
+  .auth-logo-overlay {
+    top: 16px;
+    left: 16px;
   }
 
   .modal-overlay {
     padding: 10px;
     align-items: flex-start;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
   }
 
   .modal-card {
@@ -836,22 +870,33 @@ header {
   }
 }
 
-/* Media Queries for Viewports <= 768px */
+/* ============================================================
+   MOBILE-FIRST: Phones <= 768px
+   ============================================================ */
 @media (max-width: 768px) {
   .app-container {
     padding: 16px 12px;
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
   }
   
   .glass-panel {
     padding: 20px !important;
+    border-radius: 14px !important;
   }
   
   h1 {
     font-size: 1.85rem !important;
+    line-height: 1.25 !important;
   }
   
   h2 {
-    font-size: 1.5rem !important;
+    font-size: 1.45rem !important;
+    line-height: 1.3 !important;
+  }
+
+  h3 {
+    font-size: 1.15rem !important;
   }
   
   /* Form grids stack on mobile */
@@ -865,6 +910,7 @@ header {
     display: none !important;
   }
   
+  /* Mobile hamburger button - always minimum 44x44px touch target */
   .mobile-menu-btn {
     display: flex !important;
     align-items: center;
@@ -874,14 +920,20 @@ header {
     color: var(--text-main);
     font-size: 1.5rem;
     cursor: pointer;
+    min-width: 44px;
+    min-height: 44px;
     width: 44px;
     height: 44px;
     border-radius: 8px;
     transition: var(--transition-fast);
+    /* Prevent accidental tap double-fire on iOS */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   
-  .mobile-menu-btn:hover {
-    background: rgba(0, 0, 0, 0.05);
+  .mobile-menu-btn:hover,
+  .mobile-menu-btn:active {
+    background: rgba(0, 0, 0, 0.07);
   }
   
   .mobile-menu-overlay.open {
@@ -899,30 +951,41 @@ header {
     animation: fadeIn 0.2s ease forwards;
   }
   
-  /* Inputs touch size */
+  /* Inputs — comfortable touch size (iOS min 16px prevents auto-zoom) */
   input, select, textarea {
     padding: 14px 16px;
-    font-size: 1rem;
+    font-size: 16px; /* prevents iOS auto-zoom on focus */
+    min-height: 44px;
+  }
+
+  label {
+    font-size: 0.8rem;
   }
   
+  /* Buttons — full width on mobile, 44px min height */
   .btn {
     padding: 14px 24px;
     width: 100%;
     justify-content: center;
+    min-height: 48px !important;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
   
   .btn-inline {
     width: auto !important;
     padding: 10px 16px;
+    min-height: 48px !important;
   }
   
   /* Seat visual layout */
   .seat-map-wrapper {
     width: 100%;
     max-width: 280px;
+    margin: 0 auto;
   }
   
-  /* Sticky bar at the bottom for checkout */
+  /* Sticky bar at the bottom for checkout — safe-area aware */
   .sticky-bottom-bar {
     display: block;
     position: fixed;
@@ -934,15 +997,16 @@ header {
     -webkit-backdrop-filter: blur(16px);
     border-top: 1px solid var(--border-color);
     padding: 16px 20px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
     z-index: 90;
     box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
   }
   
   .with-sticky-bottom {
-    padding-bottom: 120px;
+    padding-bottom: calc(120px + env(safe-area-inset-bottom));
   }
 
-  /* conversion of table to responsive cards */
+  /* Responsive table → card layout on mobile */
   .responsive-table, 
   .responsive-table thead, 
   .responsive-table tbody, 
@@ -992,6 +1056,130 @@ header {
     font-size: 0.85rem;
     text-transform: uppercase;
   }
+
+  /* Actions column wrapping on mobile */
+  .responsive-table td[data-label="Actions"] {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    width: 100% !important;
+    padding-top: 12px !important;
+  }
+
+  .responsive-table td[data-label="Actions"] button {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    margin: 0 !important;
+  }
+
+  /* Override hardcoded inline grid columns to stack on mobile */
+  .app-container div[style*="grid-template-columns"],
+  .operator-dashboard-layout div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* Override Booking Page layout to stack and reduce double gap */
+  div:has(> div > .seat-map-wrapper) {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  /* Search page filter bar wrapping on mobile */
+  .animate-fade-in > .glass-panel.animate-fade-in {
+    padding: 16px !important;
+  }
+
+  .animate-fade-in > .glass-panel.animate-fade-in > div {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+
+  .animate-fade-in > .glass-panel.animate-fade-in > div > div {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 10px !important;
+  }
+
+  .animate-fade-in > .glass-panel.animate-fade-in > div > div > button {
+    width: 100% !important;
+    min-height: 48px !important;
+  }
+
+  /* Profile trigger easier to tap */
+  .profile-trigger {
+    padding: 8px;
+    border-radius: 8px;
+    min-height: 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+/* ============================================================
+   SMALL PHONES <= 480px  (iPhone SE, Galaxy A series, etc.)
+   ============================================================ */
+@media (max-width: 480px) {
+  .app-container {
+    padding: 12px 10px;
+  }
+
+  .glass-panel {
+    padding: 14px !important;
+    border-radius: 12px !important;
+  }
+
+  h1 {
+    font-size: 1.6rem !important;
+  }
+
+  h2 {
+    font-size: 1.3rem !important;
+  }
+
+  .logo {
+    font-size: 1.3rem;
+  }
+
+  .auth-card {
+    padding: 20px 16px !important;
+    border-radius: 12px !important;
+  }
+
+  /* Support chat widget float positioning on small screens */
+  div[style*="position: fixed"][style*="bottom: 24px"][style*="right: 24px"] {
+    bottom: 12px !important;
+    right: 12px !important;
+    left: 12px !important;
+  }
+
+  /* Support chat container resize */
+  div[style*="position: fixed"][style*="bottom: 24px"][style*="right: 24px"] > div[style*="width: 350px"] {
+    width: calc(100vw - 24px) !important;
+    max-width: 100% !important;
+    height: 400px !important;
+  }
+
+  .auth-wrapper {
+    padding: 60px 12px 28px;
+  }
+
+  .auth-logo-overlay {
+    top: 12px;
+    left: 14px;
+  }
+
+  /* Reduce orb sizes on tiny screens for performance */
+  .auth-orb-1 { width: 280px; height: 280px; }
+  .auth-orb-2 { width: 220px; height: 220px; }
+  .auth-orb-3 { width: 160px; height: 160px; }
+
+  /* Fewer/smaller particles on small screens */
+  .auth-p4, .auth-p5 { display: none; }
 }
 
 /* Search responsive overrides */
@@ -1131,16 +1319,34 @@ div[style*="background: rgba(255, 255, 255, 0.02)"] {
   border-color: var(--border-color) !important;
 }
 
+/* ============================================================
+   TABLET: 769px – 1024px
+   ============================================================ */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .app-container {
+    padding: 24px 20px;
+  }
+
+  .home-hero-banner {
+    padding: 70px 24px 110px;
+  }
+
+  .search-card-floating {
+    transform: translateY(40px);
+    margin-bottom: 60px;
+  }
+}
+
 /* Sidebar and Dashboard Grid Layout for OperatorDashboard */
 @media (min-width: 769px) {
   .operator-dashboard-layout {
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 260px 1fr;
     grid-template-rows: auto 1fr;
     grid-template-areas: 
       "sidebar header"
       "sidebar content";
-    gap: 30px;
+    gap: 24px;
     align-items: start;
   }
 
@@ -1160,6 +1366,7 @@ div[style*="background: rgba(255, 255, 255, 0.02)"] {
     padding: 24px 16px;
     gap: 8px;
     height: calc(100vh - 80px);
+    height: calc(100dvh - 80px);
     position: sticky;
     top: 40px;
     border: none;
@@ -1171,6 +1378,7 @@ div[style*="background: rgba(255, 255, 255, 0.02)"] {
     display: block;
     width: 100%;
     padding: 12px 16px;
+    min-height: 44px;
     border-radius: 8px;
     color: #94a3b8;
     font-weight: 500;
@@ -1179,6 +1387,7 @@ div[style*="background: rgba(255, 255, 255, 0.02)"] {
     transition: var(--transition-fast);
     text-align: left;
     border-bottom: none !important;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .operator-dashboard-layout .scrollable-tab-item:hover {
@@ -1237,17 +1446,69 @@ div[style*="background: rgba(255, 255, 255, 0.02)"] {
 
 @media (max-width: 768px) {
   .home-hero-banner {
-    padding: 60px 20px;
+    padding: 50px 16px 80px;
+    border-radius: 16px;
   }
   
   .home-hero-banner h1 {
-    font-size: 2.25rem !important;
-    line-height: 1.3 !important;
+    font-size: 2rem !important;
+    line-height: 1.25 !important;
   }
   
   .search-card-floating {
     transform: none;
-    margin-top: 20px;
+    margin-top: 16px;
+    margin-bottom: 0;
+    border-radius: 14px !important;
   }
 }
 
+@media (max-width: 480px) {
+  .home-hero-banner {
+    padding: 40px 12px 60px;
+    border-radius: 12px;
+  }
+
+  .home-hero-banner h1 {
+    font-size: 1.7rem !important;
+  }
+}
+
+/* ============================================================
+   LARGE SCREENS >= 1440px: Generous spacing
+   ============================================================ */
+@media (min-width: 1440px) {
+  .app-container {
+    padding: 48px 32px;
+  }
+
+  .home-hero-banner {
+    padding: 120px 40px 160px;
+  }
+}
+
+/* ============================================================
+   ACCESSIBILITY: Respect prefers-reduced-motion
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Keep essential layout transitions, just remove decorative ones */
+  .auth-orb,
+  .auth-particle,
+  .auth-route-line,
+  .steering-wheel,
+  .pulse-indicator,
+  .hover-lift,
+  .animate-fade-in {
+    animation: none !important;
+    transition: none !important;
+  }
+}
