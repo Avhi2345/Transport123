@@ -240,7 +240,7 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
     <div className="auth-wrapper">
       {/* Video Background */}
       <video className="auth-bg-video" autoPlay loop muted playsInline>
-        <source src="/266987_medium.mp4" type="video/mp4" />
+        <source src="https://docs.google.com/uc?export=download&id=10SFJaxEhEqY7E3NXmThrvV6r59NAaQga" type="video/mp4" />
         Your browser does not support the video tag.
       </video>
       <div className="auth-video-overlay"></div>
