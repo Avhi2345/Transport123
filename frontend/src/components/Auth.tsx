@@ -238,25 +238,12 @@ export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
 
   return (
     <div className="auth-wrapper">
-      {/* Animated Background */}
-      <div className="auth-bg-animated">
-        {/* Gradient orbs */}
-        <div className="auth-orb auth-orb-1"></div>
-        <div className="auth-orb auth-orb-2"></div>
-        <div className="auth-orb auth-orb-3"></div>
-        {/* Floating route dots */}
-        <div className="auth-particle auth-p1">✈</div>
-        <div className="auth-particle auth-p2">🚌</div>
-        <div className="auth-particle auth-p3">📍</div>
-        <div className="auth-particle auth-p4">🗺</div>
-        <div className="auth-particle auth-p5">🛤</div>
-        {/* Animated route lines */}
-        <svg className="auth-route-svg" viewBox="0 0 1440 800" preserveAspectRatio="none">
-          <path className="auth-route-line auth-rl-1" d="M0,400 Q360,200 720,400 T1440,400" />
-          <path className="auth-route-line auth-rl-2" d="M0,500 Q480,300 960,500 T1440,300" />
-          <path className="auth-route-line auth-rl-3" d="M0,200 Q720,100 1440,200" />
-        </svg>
-      </div>
+      {/* Video Background */}
+      <video className="auth-bg-video" autoPlay loop muted playsInline>
+        <source src="/266987_medium.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+      <div className="auth-video-overlay"></div>
       <div className="glass-panel animate-fade-in auth-card">
         <h2 style={{ marginBottom: '24px', textAlign: 'center' }} className="gradient-text">
           {isRecoveryMode 
