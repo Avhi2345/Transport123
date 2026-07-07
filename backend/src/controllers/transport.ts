@@ -1283,6 +1283,9 @@ export async function createOperatorRoute(req: AuthRequest, res: Response) {
 // 18. Vehicle ViewSet Actions
 export async function getVehiclesList(req: AuthRequest, res: Response) {
   if (!req.user) return res.sendStatus(401);
+  if (req.user.role !== 'transport_operator' && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Operator access required' });
+  }
   try {
     const list = await prisma.vehicle.findMany({ where: { operator_id: req.user.id } });
     return res.json(list);
@@ -1293,6 +1296,9 @@ export async function getVehiclesList(req: AuthRequest, res: Response) {
 
 export async function createVehicle(req: AuthRequest, res: Response) {
   if (!req.user) return res.sendStatus(401);
+  if (req.user.role !== 'transport_operator' && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'Operator access required' });
+  }
   const { name, vehicle_type, vehicle_number, capacity, driver_name, driver_contact, rc_url, vehicle_photo_url } = req.body;
 
   try {
@@ -1506,6 +1512,27 @@ export async function submitVerification(req: AuthRequest, res: Response) {
   } = req.body;
 
   try {
+    if (phone) {
+      const existingPhone = await prisma.user.findFirst({
+        where: {
+          phone,
+          id: { not: req.user.id }
+        }
+      });
+      if (existingPhone) {
+        return res.status(400).json({ error: 'This phone number is already registered.' });
+      }
+      const existingProfilePhone = await prisma.transportOperatorProfile.findFirst({
+        where: {
+          phone,
+          user_id: { not: req.user.id }
+        }
+      });
+      if (existingProfilePhone) {
+        return res.status(400).json({ error: 'This phone number is already registered.' });
+      }
+    }
+
     if (!licence_url || !rc_url || !vehicle_photo_url) {
       return res.status(400).json({ error: 'All verification documents (Licence, RC, and Vehicle Photo) are required.' });
     }
@@ -1674,6 +1701,27 @@ export async function updateProfile(req: AuthRequest, res: Response) {
   const { first_name, last_name, phone, upi_id, bank_account, bank_ifsc, bank_name, account_holder } = req.body;
 
   try {
+    if (phone) {
+      const existingPhone = await prisma.user.findFirst({
+        where: {
+          phone,
+          id: { not: req.user.id }
+        }
+      });
+      if (existingPhone) {
+        return res.status(400).json({ error: 'This phone number is already registered.' });
+      }
+      const existingProfilePhone = await prisma.transportOperatorProfile.findFirst({
+        where: {
+          phone,
+          user_id: { not: req.user.id }
+        }
+      });
+      if (existingProfilePhone) {
+        return res.status(400).json({ error: 'This phone number is already registered.' });
+      }
+    }
+
     const updated = await prisma.user.update({
       where: { id: req.user.id },
       data: {
@@ -1749,7 +1797,7 @@ export async function sendOTP(req: Request, res: Response) {
       where: { email: emailKey }
     });
     if (existingUser) {
-      return res.status(400).json({ error: 'An account with this email already exists. Please sign in instead.' });
+      return res.status(400).json({ error: 'This email is already registered.' });
     }
   } catch (dbErr: any) {
     console.error('Failed to check duplicate email in user table:', dbErr);
@@ -1863,7 +1911,7 @@ export async function verifyOTP(req: Request, res: Response) {
       where: { email: emailKey }
     });
     if (existingUser) {
-      return res.status(400).json({ error: 'An account with this email already exists. Please sign in instead.' });
+      return res.status(400).json({ error: 'This email is already registered.' });
     }
   } catch (dbErr: any) {
     console.error('Failed to check duplicate email in user table:', dbErr);

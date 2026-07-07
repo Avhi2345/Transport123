@@ -100,11 +100,12 @@ interface Stats {
 
 interface OperatorDashboardProps {
   onBackToSearch: () => void;
-  initialTab?: 'overview' | 'trips' | 'create-trip' | 'create-route' | 'create-vehicle' | 'edit-profile' | 'fleet-dashboard' | 'vehicle-dashboard';
+  onLogout?: () => void;
+  initialTab?: 'overview' | 'trips' | 'create-trip' | 'create-route' | 'create-vehicle' | 'edit-profile' | 'fleet-dashboard' | 'vehicle-dashboard' | 'support-desk';
 }
 
-export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSearch, initialTab }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'trips' | 'create-trip' | 'create-route' | 'create-vehicle' | 'edit-profile' | 'fleet-dashboard' | 'vehicle-dashboard'>(initialTab || 'overview');
+export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSearch, onLogout, initialTab }) => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'trips' | 'create-trip' | 'create-route' | 'create-vehicle' | 'edit-profile' | 'fleet-dashboard' | 'vehicle-dashboard' | 'support-desk'>(initialTab || 'overview');
   const [selectedVehicleForDashboard, setSelectedVehicleForDashboard] = useState<any | null>(null);
   
   // Support Widget States
@@ -148,6 +149,7 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
 
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -205,6 +207,7 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
 
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const response = await api.get('operator/dashboard/');
       setStats(response.data);
@@ -216,9 +219,9 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
         setProfileUpi(profile.upi_id || '');
         setProfileBank(profile.bank_details || '');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Failed to load operator metrics');
+      setError(err.response?.data?.error || err.message || 'Failed to load operator metrics');
     } finally {
       setLoading(false);
     }
@@ -712,8 +715,24 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
     }
   };
 
-  if (loading || !stats) {
+  if (loading) {
     return <div style={{ textAlign: 'center', padding: '40px' }}>Loading Operator Dashboard...</div>;
+  }
+
+  if (error && !stats) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-main)' }}>
+        <h3 style={{ color: '#ef4444' }}>Error Loading Dashboard</h3>
+        <p style={{ margin: '12px 0 20px', color: 'var(--text-muted)' }}>{error}</p>
+        <button onClick={fetchDashboardData} className="btn btn-primary">
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return <div style={{ textAlign: 'center', padding: '40px' }}>No stats data available.</div>;
   }
 
   const profile = stats.operator_profile;
@@ -785,10 +804,10 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
           📍 Live Tracking
         </span>
         <span 
-          onClick={() => { setSupportWidgetOpen(true); }} 
-          className="scrollable-tab-item"
+          onClick={() => { setActiveTab('support-desk'); setManifestTrip(null); }} 
+          className={`scrollable-tab-item ${activeTab === 'support-desk' ? 'active' : ''}`}
         >
-          💬 Support
+          💬 Support Desk
         </span>
         <span 
           onClick={() => { setActiveTab('edit-profile'); setManifestTrip(null); }} 
@@ -805,7 +824,7 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
         
         <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
           <span 
-            onClick={onBackToSearch} 
+            onClick={onLogout || onBackToSearch} 
             className="scrollable-tab-item"
             style={{ color: 'var(--danger)', fontWeight: 600 }}
           >
@@ -818,7 +837,13 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
       <div className="responsive-flex-header" style={{ marginBottom: '24px' }}>
         <div>
           <h1 className="gradient-text" style={{ fontSize: '2rem', marginBottom: '4px', textTransform: 'capitalize' }}>
-            {activeTab === 'overview' ? 'Dashboard' : activeTab.replace('-', ' ')}
+            {activeTab === 'overview' ? 'Dashboard' : 
+             activeTab === 'create-vehicle' ? 'Vehicles' :
+             activeTab === 'fleet-dashboard' ? 'Fleet' :
+             activeTab === 'create-route' ? 'Routes' :
+             activeTab === 'vehicle-dashboard' ? 'Live Tracking' :
+             activeTab === 'edit-profile' ? 'Profile' :
+             activeTab.replace('-', ' ')}
           </h1>
         </div>
         
@@ -2300,6 +2325,125 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
           </form>
         </div>
       )}
+
+      {activeTab === 'support-desk' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div className="glass-panel" style={{ padding: '24px' }}>
+            <h3 className="gradient-text" style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '16px' }}>Help Center & Chat Support</h3>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '24px' }}>
+              Welcome to the NE Explore Support Desk. Access self-help resources, book an onboarding agent, or chat with our automated assistant.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px' }} className="responsive-grid-2">
+              {/* Help Center FAQs */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <h4 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '8px' }}>Frequently Asked Questions</h4>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {[
+                    { q: 'How do I upload vehicle RC and photos?', a: 'Go to Fleet Dashboard, select "Fleet Entry", and upload your vehicle documents (RC PDF/image and exterior photo). Admin reviews typically take 1-2 hours.' },
+                    { q: 'How long does operator profile approval take?', a: 'Admin evaluation and verification of operator profiles generally completes within 24 hours of submission.' },
+                    { q: 'How do I receive payments?', a: 'Earnings are disbursed directly to your bank account or UPI ID. Make sure to configure your refund and payout credentials in the Profile tab.' },
+                    { q: 'How does live GPS tracking work?', a: 'On your Vehicle Dashboard, select a vehicle, click "Console" under active tracking, and click "Start GPS Simulation" or enable live device uploads.' }
+                  ].map((faq, i) => (
+                    <details key={i} style={{ background: 'rgba(255, 255, 255, 0.01)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px' }}>
+                      <summary style={{ fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', outline: 'none', userSelect: 'none' }}>
+                        {faq.q}
+                      </summary>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.825rem', marginTop: '8px', lineHeight: '1.4' }}>
+                        {faq.a}
+                      </p>
+                    </details>
+                  ))}
+                </div>
+
+                {/* Book an Agent Form */}
+                <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '12px' }}>Book an Agent</h4>
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    alert('Request submitted! An onboarding assistant will contact you within 15 minutes.');
+                  }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div className="responsive-grid-2" style={{ gap: '12px' }}>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label style={{ fontSize: '0.75rem' }}>Name</label>
+                        <input type="text" placeholder="Your Name" required defaultValue={stats?.operator_profile?.operator_name || ''} />
+                      </div>
+                      <div className="form-group" style={{ marginBottom: 0 }}>
+                        <label style={{ fontSize: '0.75rem' }}>Phone Number</label>
+                        <input type="text" placeholder="10-digit number" required defaultValue={stats?.operator_profile?.phone || ''} />
+                      </div>
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label style={{ fontSize: '0.75rem' }}>Query Topic</label>
+                      <select required>
+                        <option value="onboarding">Fleet Onboarding Help</option>
+                        <option value="verification">Verification Issue</option>
+                        <option value="payments">Earning & Payouts</option>
+                        <option value="gps">GPS & Tracking Issue</option>
+                      </select>
+                    </div>
+                    <button type="submit" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                      Schedule Call Now
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              {/* Chat Support Interface */}
+              <div className="glass-panel" style={{ padding: '16px', height: '450px', display: 'flex', flexDirection: 'column', background: 'rgba(16, 24, 40, 0.92)' }}>
+                <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', marginBottom: '12px' }}>
+                  <strong style={{ fontSize: '0.9rem' }}>Chat Support Assistant</strong>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Automated assistant for quick compliance queries</div>
+                </div>
+                
+                {/* Chat Message History */}
+                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px', marginBottom: '12px' }}>
+                  {supportMessages.map((m, i) => (
+                    <div key={i} style={{
+                      alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start',
+                      background: m.sender === 'user' ? 'var(--accent-primary)' : 'rgba(255,255,255,0.06)',
+                      color: '#ffffff',
+                      padding: '8px 12px',
+                      borderRadius: '10px',
+                      fontSize: '0.8rem',
+                      maxWidth: '85%'
+                    }}>
+                      {m.text}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Chat Input form */}
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!supportInput.trim()) return;
+                  const text = supportInput;
+                  setSupportInput('');
+                  setSupportMessages(prev => [...prev, { sender: 'user', text }]);
+                  setTimeout(() => {
+                    setSupportMessages(prev => [...prev, {
+                      sender: 'bot',
+                      text: `Thank you. A support representative has received your request: "${text}". We will assist you shortly.`
+                    }]);
+                  }, 800);
+                }} style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    value={supportInput}
+                    onChange={(e) => setSupportInput(e.target.value)}
+                    placeholder="Type a message..."
+                    style={{ flex: 1, padding: '8px 12px', fontSize: '0.85rem' }}
+                  />
+                  <button type="submit" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                    Send
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Floating Support Chat Widget */}
       <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000, fontFamily: 'var(--font-main, sans-serif)' }}>
         {!supportWidgetOpen ? (
@@ -2392,11 +2536,11 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
                 className="btn btn-secondary btn-inline" 
                 style={{ padding: '4px 8px', fontSize: '0.7rem', margin: 0, borderRadius: '4px' }}
               >
-                📞 Book Agent
+                📞 Book an Agent
               </button>
               <button 
                 onClick={() => {
-                  const msgs = [...supportMessages, { sender: 'user' as const, text: 'Verify Vehicle Help' }];
+                  const msgs = [...supportMessages, { sender: 'user' as const, text: 'Help Center' }];
                   setSupportMessages(msgs);
                   setTimeout(() => {
                     setSupportMessages(prev => [...prev, {
@@ -2408,23 +2552,23 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
                 className="btn btn-secondary btn-inline" 
                 style={{ padding: '4px 8px', fontSize: '0.7rem', margin: 0, borderRadius: '4px' }}
               >
-                📝 Documents Help
+                ❓ Help Center
               </button>
               <button 
                 onClick={() => {
-                  const msgs = [...supportMessages, { sender: 'user' as const, text: 'FAQs' }];
+                  const msgs = [...supportMessages, { sender: 'user' as const, text: 'Chat Support' }];
                   setSupportMessages(msgs);
                   setTimeout(() => {
                     setSupportMessages(prev => [...prev, {
                       sender: 'bot',
-                      text: 'FAQs:\n1. How do I start tracking? Go to Fleet Dashboard -> Console -> Start Route Tracking.\n2. How long does verification take? 1-2 hours.\n3. How do I get paid? Configure UPI in Profile Settings.'
+                      text: 'Chat Support is active. Type your query in the field below and our automated compliance assistant will guide you.'
                     }]);
                   }, 800);
                 }}
                 className="btn btn-secondary btn-inline" 
                 style={{ padding: '4px 8px', fontSize: '0.7rem', margin: 0, borderRadius: '4px' }}
               >
-                ❓ FAQs
+                💬 Chat Support
               </button>
             </div>
 

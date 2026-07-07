@@ -591,7 +591,7 @@ header {
   min-height: 100vh;
   min-height: 100dvh;
   width: 100%;
-  padding: 80px 20px 40px; /* top padding accounts for logo overlay */
+  padding: 80px 20px 100px; /* top padding accounts for logo overlay, bottom for footer */
   position: relative;
   overflow: hidden;
   /* Deep navy-to-blue travel gradient base */
@@ -626,6 +626,40 @@ header {
   background: linear-gradient(135deg, rgba(11, 31, 68, 0.6) 0%, rgba(15, 52, 96, 0.4) 50%, rgba(11, 31, 68, 0.75) 100%);
   z-index: 1;
   pointer-events: none;
+}
+
+.auth-footer {
+  position: absolute;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  z-index: 5;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  pointer-events: auto;
+}
+
+.auth-social-links {
+  display: flex;
+  gap: 20px;
+}
+
+.auth-social-link {
+  color: rgba(255, 255, 255, 0.6);
+  transition: color 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.auth-social-link:hover {
+  color: var(--accent-primary);
+  transform: translateY(-2px);
 }
 
 /* The animated background container */
@@ -1654,9 +1688,12 @@ div[style*="background: rgba(255, 255, 255, 0.02)"] {
 
 .dashboard-welcome-card .banner-bus-img {
   max-width: 180px;
+  width: 100%;
   height: auto;
   z-index: 2;
   border-radius: 8px;
+  flex-shrink: 0;
+  object-fit: cover;
 }
 
 @media (max-width: 768px) {
@@ -1728,18 +1765,17 @@ div[style*="background: rgba(255, 255, 255, 0.02)"] {
 /* Responsive grid layout for the welcome card + 4 stats cards */
 .responsive-grid-5 {
   display: grid;
-  grid-template-columns: 1.2fr repeat(4, 1fr);
+  grid-template-columns: 2.5fr repeat(4, 1fr);
   gap: 20px;
 }
 
 @media (max-width: 1200px) {
   .responsive-grid-5 {
-    grid-template-columns: 1.2fr 1fr 1fr !important;
-    grid-template-rows: auto auto !important;
+    grid-template-columns: repeat(4, 1fr) !important;
   }
   /* make welcome card take full row width */
   .responsive-grid-5 > :first-child {
-    grid-column: span 3 !important;
+    grid-column: span 4 !important;
   }
 }
 

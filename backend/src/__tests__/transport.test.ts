@@ -16,6 +16,7 @@ jest.mock('@prisma/client', () => {
       findUnique: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      findFirst: jest.fn().mockResolvedValue(null),
     },
     trip: {
       findUnique: jest.fn(),
@@ -54,6 +55,7 @@ jest.mock('@prisma/client', () => {
       update: jest.fn(),
       findUnique: jest.fn(),
       findMany: jest.fn(),
+      findFirst: jest.fn().mockResolvedValue(null),
     },
     liveTripStatus: {
       upsert: jest.fn(),

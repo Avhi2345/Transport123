@@ -125,15 +125,21 @@ export const App: React.FC = () => {
   }, [extractProfile]);
 
   useEffect(() => {
-    const loginTimeStr = localStorage.getItem('session_login_time');
-    if (session && loginTimeStr) {
-      const loginTime = parseInt(loginTimeStr, 10);
-      const now = Date.now();
-      if (now - loginTime > 24 * 60 * 60 * 1000) {
-        handleSignOut();
-        alert('Your session has expired (24 hours limit). Please sign in again.');
+    const checkTimeout = () => {
+      const loginTimeStr = localStorage.getItem('session_login_time');
+      if (session && loginTimeStr) {
+        const loginTime = parseInt(loginTimeStr, 10);
+        const now = Date.now();
+        if (now - loginTime > 24 * 60 * 60 * 1000) {
+          handleSignOut();
+          alert('Your session has expired (24 hours limit). Please sign in again.');
+        }
       }
-    }
+    };
+
+    checkTimeout();
+    const interval = setInterval(checkTimeout, 60000); // check every minute
+    return () => clearInterval(interval);
   }, [session]);
 
 
@@ -237,7 +243,17 @@ export const App: React.FC = () => {
         
         {/* Header Top Bar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <a href="#" onClick={() => { setCurrentView('search'); setMobileMenuOpen(false); }} className="logo gradient-text">NE Explore</a>
+          <a href="#" onClick={(e) => {
+            e.preventDefault();
+            if (userProfile?.role === 'transport_operator') {
+              setCurrentView('dashboard');
+            } else if (userProfile?.role === 'admin') {
+              setCurrentView('admin-dashboard');
+            } else {
+              setCurrentView('search');
+            }
+            setMobileMenuOpen(false);
+          }} className="logo gradient-text">NE Explore</a>
           
           {/* Desktop Navigation */}
           <div className="desktop-nav">
@@ -251,6 +267,15 @@ export const App: React.FC = () => {
                 style={{ padding: '8px 16px', fontSize: '0.85rem' }}
               >
                 My Bookings
+              </button>
+            )}
+            {isOperator && (
+              <button 
+                onClick={() => setCurrentView(currentView === 'dashboard' ? 'search' : 'dashboard')} 
+                className="btn btn-secondary btn-inline" 
+                style={{ padding: '8px 16px', fontSize: '0.85rem', borderColor: 'var(--accent-secondary)', color: 'var(--accent-secondary)' }}
+              >
+                {currentView === 'dashboard' ? 'Search Trips' : 'Operator Dashboard'}
               </button>
             )}
             {userProfile?.role === 'admin' && (
@@ -315,6 +340,16 @@ export const App: React.FC = () => {
             </button>
           )}
 
+          {isOperator && (
+            <button 
+              onClick={() => { setCurrentView(currentView === 'dashboard' ? 'search' : 'dashboard'); setMobileMenuOpen(false); }} 
+              className="btn btn-secondary" 
+              style={{ borderColor: 'var(--accent-secondary)', color: 'var(--accent-secondary)' }}
+            >
+              {currentView === 'dashboard' ? 'Search Trips' : 'Operator Dashboard'}
+            </button>
+          )}
+
           {userProfile?.role === 'admin' && (
             <button 
               onClick={() => { setCurrentView(currentView === 'admin-dashboard' ? 'search' : 'admin-dashboard'); setMobileMenuOpen(false); }} 
@@ -362,6 +397,7 @@ export const App: React.FC = () => {
         <div style={{ display: currentView === 'dashboard' ? 'block' : 'none' }}>
           <OperatorDashboard 
             onBackToSearch={() => setCurrentView('search')}
+            onLogout={handleSignOut}
             initialTab={operatorTab}
           />
         </div>
