@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
+import { LiveTrackingVisual } from './LiveTrackingVisual';
 
 interface TrackingData {
   id: number;
@@ -36,8 +37,12 @@ interface BookingDetails {
       vehicle_number: string;
       driver_name: string;
       driver_contact: string;
+      vehicle_type?: string;
+      vehicle_photo_url?: string | null;
     };
     route_details?: {
+      source?: string;
+      destination?: string;
       stops: Array<{
         id: number;
         stop_name: string;
@@ -78,7 +83,6 @@ export const Ticket: React.FC<TicketProps> = ({ bookingRef, onBackToSearch }) =>
   const [resending, setResending] = useState(false);
   const [trackingData, setTrackingData] = useState<TrackingData | null>(null);
   const [trackingError, setTrackingError] = useState<string>('');
-  const [showMap, setShowMap] = useState<boolean>(false);
 
   const booking = bookingsList[activeIdx] || null;
 
@@ -480,61 +484,51 @@ export const Ticket: React.FC<TicketProps> = ({ bookingRef, onBackToSearch }) =>
             <span style={{ fontSize: '0.8rem', color: '#06b6d4', padding: '3px 8px', borderRadius: '4px', background: 'rgba(6,182,212,0.1)', fontWeight: 600 }}>IN TRANSIT</span>
           </div>
 
-          {trackingData ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              {/* Live Status Header Summary */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                <div className="responsive-grid-2" style={{ gap: '15px' }}>
-                  <div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Status Summary</span>
-                    <div style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-main)', marginTop: '4px' }}>
-                      {(() => {
-                        const stops = booking.trip_details.route_details?.stops || [];
-                        const nextStopId = trackingData.next_stop_id;
-                        const nextStopIdx = stops.findIndex(s => s.id === nextStopId);
-                        
-                        if (nextStopIdx === 0) {
-                          return `Preparing to depart from ${stops[0].stop_name}`;
-                        } else if (nextStopIdx > 0) {
-                          const prevStop = stops[nextStopIdx - 1];
-                          const nextStop = stops[nextStopIdx];
-                          return `En route to ${nextStop.stop_name} (passed ${prevStop.stop_name})`;
-                        } else if (nextStopId === null && stops.length > 0) {
-                          return `Approaching ${stops[stops.length - 1].stop_name} / Destination`;
-                        }
-                        return "Bus is active on route";
-                      })()}
-                    </div>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Delay & Speed</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px' }}>
-                      <span style={{ fontSize: '1.05rem', fontWeight: 600, color: trackingData.delay_minutes > 0 ? '#ef4444' : '#10b981' }}>
-                        {trackingData.delay_minutes > 0 ? `+${trackingData.delay_minutes} mins delay` : 'On Time'}
-                      </span>
-                      {trackingData.current_speed > 0 && (
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-                          • {trackingData.current_speed} km/h
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '12px', paddingTop: '8px', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  <span>Vehicle: {booking.trip_details.vehicle_details?.name} ({booking.trip_details.vehicle_details?.vehicle_number})</span>
-                  <span>Signal: {new Date(trackingData.last_updated).toLocaleTimeString()}</span>
-                </div>
-              </div>
+          {trackingData ? (() => {
+            const stops = booking.trip_details.route_details?.stops || [];
+            const nextStop = stops.find((s: any) => s.id === trackingData.next_stop_id);
+            const nextStopName = nextStop?.stop_name || (stops.length > 0 ? stops[stops.length - 1].stop_name : "Destination");
+            
+            // Calculate distance covered and total distance
+            const totalDistanceVal = stops.reduce((sum: number, s: any) => sum + Number(s.distance_from_start || 0), 0) || 180;
+            const nextStopIdx = stops.findIndex((s: any) => s.id === trackingData.next_stop_id);
+            const distanceCoveredVal = nextStopIdx > 0 
+              ? stops.slice(0, nextStopIdx).reduce((sum: number, s: any) => sum + Number(s.distance_from_start || 0), 0)
+              : (nextStopIdx === -1 && stops.length > 0 ? totalDistanceVal : Math.round(totalDistanceVal * 0.6));
 
-              {/* Vertical Stoppage Stepper */}
-              <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: '8px', margin: '10px 0' }}>
-                {(() => {
-                  const stops = booking.trip_details.route_details?.stops || [];
-                  const nextStopId = trackingData.next_stop_id;
-                  const nextStopIdx = stops.findIndex(s => s.id === nextStopId);
-                  const departureTime = new Date(booking.trip_details.departure_datetime);
+            const departureTime = new Date(booking.trip_details.departure_datetime);
+            const nextStopOffset = nextStop?.arrival_time_offset || 120;
+            const scheduledTime = new Date(departureTime.getTime() + nextStopOffset * 60 * 1000);
+            const estimatedTime = new Date(scheduledTime.getTime() + (trackingData.delay_minutes || 0) * 60 * 1000);
+            
+            const etaStr = estimatedTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-                  return stops.map((stop, idx) => {
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <LiveTrackingVisual 
+                  vehicleName={booking.trip_details.vehicle_details?.name || "Volvo AC Bus"}
+                  vehicleNumber={booking.trip_details.vehicle_details?.vehicle_number || "AS01BC1234"}
+                  vehicleType={booking.trip_details.vehicle_details?.vehicle_type || "bus"}
+                  vehiclePhoto={booking.trip_details.vehicle_details?.vehicle_photo_url ? `${api.defaults.baseURL?.replace('/api/transport/', '')}${booking.trip_details.vehicle_details.vehicle_photo_url}` : null}
+                  source={booking.from_stop_details?.stop_name || booking.trip_details.route_details?.source || "Guwahati"}
+                  destination={booking.to_stop_details?.stop_name || booking.trip_details.route_details?.destination || "Shillong"}
+                  driverName={booking.trip_details.vehicle_details?.driver_name || "Ramesh Das"}
+                  driverContact={booking.trip_details.vehicle_details?.driver_contact || "+91 98765-43210"}
+                  speed={trackingData.current_speed || 0}
+                  nextStopName={nextStopName}
+                  nextStopDistance={`${nextStopIdx !== -1 ? "Approaching Stop" : "Destination"}`}
+                  eta={etaStr}
+                  distanceCovered={`${distanceCoveredVal} km`}
+                  totalDistance={`${totalDistanceVal} km`}
+                  statusText={trackingData.delay_minutes > 0 ? `+${trackingData.delay_minutes}m delay` : "On Time"}
+                  statusColor={trackingData.delay_minutes > 0 ? "#ef4444" : "#10b981"}
+                  latitude={trackingData.current_latitude}
+                  longitude={trackingData.current_longitude}
+                />
+
+                {/* Vertical Stoppage Stepper */}
+                <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: '8px', margin: '10px 0' }}>
+                  {stops.map((stop, idx) => {
                     const isBoarding = stop.id === booking.from_stop_details?.id;
                     const isDropOff = stop.id === booking.to_stop_details?.id;
 
@@ -627,33 +621,11 @@ export const Ticket: React.FC<TicketProps> = ({ bookingRef, onBackToSearch }) =>
                         </div>
                       </div>
                     );
-                  });
-                })()}
+                  })}
+                </div>
               </div>
-
-              {/* Map collapsible drawer */}
-              <div style={{ marginTop: '5px' }}>
-                <button 
-                  onClick={() => setShowMap(!showMap)} 
-                  className="btn btn-secondary btn-inline" 
-                  style={{ width: '100%', padding: '10px', fontSize: '0.85rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}
-                >
-                  🗺️ {showMap ? 'Hide Map View' : 'Show Map View'}
-                </button>
-                {showMap && (
-                  <div className="animate-fade-in" style={{ borderRadius: '12px', overflow: 'hidden', height: '220px', border: '1px solid var(--border-color)', position: 'relative', marginTop: '12px' }}>
-                    <iframe 
-                      title="Live Location Map"
-                      width="100%" 
-                      height="100%" 
-                      style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg) brightness(95%) contrast(90%)' }}
-                      src={`https://maps.google.com/maps?q=${trackingData.current_latitude},${trackingData.current_longitude}&z=13&output=embed`}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
+            );
+          })() : (
             <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '20px', fontSize: '0.9rem' }}>
               {trackingError || 'Connecting to vehicle GPS stream...'}
             </div>

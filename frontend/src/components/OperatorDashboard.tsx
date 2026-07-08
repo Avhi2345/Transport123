@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
+import { LiveTrackingVisual } from './LiveTrackingVisual';
 
 interface Vehicle {
   id: number;
@@ -2143,259 +2144,345 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
         </div>
       )}
 
-      {activeTab === 'vehicle-dashboard' && selectedVehicleForDashboard && (
-        <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px 24px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-            <div>
-              <span 
-                onClick={() => {
-                  // Stop simulations on back
-                  if (vehicleSimulating) {
-                    clearInterval(vehicleSimInterval);
-                    setVehicleSimulating(false);
-                  }
-                  setActiveTab('fleet-dashboard');
-                  setSelectedVehicleForDashboard(null);
-                }} 
-                style={{ cursor: 'pointer', color: 'var(--accent-primary)', fontSize: '0.85rem', fontWeight: 500, display: 'inline-block', marginBottom: '4px' }}
-              >
-                ← Back to Fleet Dashboard
-              </span>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>
-                {selectedVehicleForDashboard.name} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 400 }}>({selectedVehicleForDashboard.vehicle_number})</span>
-              </h2>
-            </div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Device Status:</span>
-              <button 
-                onClick={async () => {
-                  const newActiveState = !selectedVehicleForDashboard.is_active;
-                  try {
-                    // Update locally and simulate save
-                    setSelectedVehicleForDashboard({
-                      ...selectedVehicleForDashboard,
-                      is_active: newActiveState
-                    });
-                    
-                    // Update state list
-                    if (stats) {
-                      const updatedVehicles = stats.vehicles.map((v: any) => 
-                        v.id === selectedVehicleForDashboard.id ? { ...v, is_active: newActiveState } : v
-                      );
-                      setStats({ ...stats, vehicles: updatedVehicles });
-                    }
-                  } catch (err) {
-                    console.error(err);
-                  }
-                }}
-                className="btn btn-secondary btn-inline" 
-                style={{ 
-                  padding: '6px 12px', 
-                  fontSize: '0.75rem', 
-                  background: selectedVehicleForDashboard.is_active ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', 
-                  color: selectedVehicleForDashboard.is_active ? '#34d399' : '#f87171',
-                  borderColor: selectedVehicleForDashboard.is_active ? '#10b981' : '#ef4444',
-                  margin: 0
-                }}
-              >
-                {selectedVehicleForDashboard.is_active ? '🟢 ONLINE' : '🔴 OFFLINE'}
-              </button>
-            </div>
-          </div>
+      {activeTab === 'vehicle-dashboard' && (() => {
+        if (!selectedVehicleForDashboard) {
+          return (
+            <div className="glass-panel" style={{ padding: '30px' }}>
+              <h3 className="gradient-text" style={{ fontSize: '1.5rem', marginBottom: '10px' }}>Step 6: Live GPS Tracking Console</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '24px' }}>
+                Select one of your registered vehicles below to open its real-time GPS tracking simulator and console, monitor current speeds, map coordinates, and report delay statuses.
+              </p>
 
-          {/* Grid Control Board */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+              {stats.vehicles.length === 0 ? (
+                <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0', border: '1px dashed var(--border-color)', borderRadius: '12px' }}>
+                  No vehicles registered yet. Please register your fleet in <strong>Step 2</strong>.
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                  {stats.vehicles.map((vehicle: any) => (
+                    <div 
+                      key={vehicle.id} 
+                      style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                      className="hover-lift"
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px', background: 'var(--bg-tertiary)', color: 'var(--accent-primary)', textTransform: 'uppercase', fontWeight: 600 }}>
+                            {vehicle.vehicle_type}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 600, background: vehicle.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)', color: vehicle.is_active ? '#34d399' : 'var(--text-muted)' }}>
+                            {vehicle.is_active ? 'ONLINE' : 'OFFLINE'}
+                          </span>
+                        </div>
+                        <h4 style={{ fontSize: '1.1rem', marginBottom: '4px', color: 'var(--text-main)' }}>{vehicle.name}</h4>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '12px' }}>Plate: <strong>{vehicle.vehicle_number}</strong></p>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px', marginBottom: '16px' }}>
+                          <div>👤 <strong>Driver:</strong> {vehicle.driver_name}</div>
+                          <div>📞 <strong>Contact:</strong> {vehicle.driver_contact}</div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setSelectedVehicleForDashboard(vehicle)}
+                        className="btn btn-primary"
+                        style={{ width: '100%', padding: '8px 0', fontSize: '0.8rem', borderRadius: '8px', margin: 0 }}
+                      >
+                        🛰️ Open Console & Track
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // Find active trip details for this vehicle from stats
+        const activeTrip = stats.trips.find(t => t.vehicle_details?.vehicle_number === selectedVehicleForDashboard.vehicle_number);
+        const source = activeTrip?.route_details?.source || "Guwahati";
+        const destination = activeTrip?.route_details?.destination || "Shillong";
+        
+        // Calculate ETA string
+        const departureTime = activeTrip ? new Date(activeTrip.card_date + ' ' + activeTrip.card_time) : new Date();
+        const etaTime = new Date(departureTime.getTime() + (120 + delayMinutes) * 60 * 1000);
+        const etaStr = etaTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+        return (
+          <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             
-            {/* Left: GPS Simulation */}
-            <div className="glass-panel" style={{ padding: '24px' }}>
-              <h3 style={{ fontSize: '1.15rem', marginBottom: '16px', fontWeight: 600, color: 'var(--accent-primary)' }}>📍 Live GPS & Tracking Simulator</h3>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px 24px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+              <div>
+                <span 
+                  onClick={() => {
+                    // Stop simulations on back
+                    if (vehicleSimulating) {
+                      clearInterval(vehicleSimInterval);
+                      setVehicleSimulating(false);
+                    }
+                    setSelectedVehicleForDashboard(null);
+                  }} 
+                  style={{ cursor: 'pointer', color: 'var(--accent-primary)', fontSize: '0.85rem', fontWeight: 500, display: 'inline-block', marginBottom: '4px' }}
+                >
+                  ← Back to Selection
+                </span>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>
+                  {selectedVehicleForDashboard.name} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 400 }}>({selectedVehicleForDashboard.vehicle_number})</span>
+                </h2>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Device Status:</span>
+                <button 
+                  onClick={async () => {
+                    const newActiveState = !selectedVehicleForDashboard.is_active;
+                    try {
+                      setSelectedVehicleForDashboard({
+                        ...selectedVehicleForDashboard,
+                        is_active: newActiveState
+                      });
+                      
+                      if (stats) {
+                        const updatedVehicles = stats.vehicles.map((v: any) => 
+                          v.id === selectedVehicleForDashboard.id ? { ...v, is_active: newActiveState } : v
+                        );
+                        setStats({ ...stats, vehicles: updatedVehicles });
+                      }
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  }}
+                  className="btn btn-secondary btn-inline" 
+                  style={{ 
+                    padding: '6px 12px', 
+                    fontSize: '0.75rem', 
+                    background: selectedVehicleForDashboard.is_active ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', 
+                    color: selectedVehicleForDashboard.is_active ? '#34d399' : '#f87171',
+                    borderColor: selectedVehicleForDashboard.is_active ? '#10b981' : '#ef4444',
+                    margin: 0
+                  }}
+                >
+                  {selectedVehicleForDashboard.is_active ? '🟢 ONLINE' : '🔴 OFFLINE'}
+                </button>
+              </div>
+            </div>
+
+            {/* Reusable map representation */}
+            <LiveTrackingVisual 
+              vehicleName={selectedVehicleForDashboard.name}
+              vehicleNumber={selectedVehicleForDashboard.vehicle_number}
+              vehicleType={selectedVehicleForDashboard.vehicle_type}
+              vehiclePhoto={selectedVehicleForDashboard.vehicle_photo_url ? `${api.defaults.baseURL?.replace('/api/transport/', '')}${selectedVehicleForDashboard.vehicle_photo_url}` : null}
+              source={source}
+              destination={destination}
+              driverName={selectedVehicleForDashboard.driver_name}
+              driverContact={selectedVehicleForDashboard.driver_contact}
+              speed={vehicleSimulating ? vehicleSimSpeed : 0}
+              nextStopName={vehicleSimulating ? "Nongpoh" : (activeTrip ? "Approaching Stop #1" : "Umiam Lake")}
+              nextStopDistance={vehicleSimulating ? "15 km away" : "Calculating..."}
+              eta={etaStr}
+              distanceCovered={vehicleSimulating ? "120 km" : "0 km"}
+              totalDistance="180 km"
+              statusText={delayMinutes > 0 ? `+${delayMinutes}m delay` : "On Time"}
+              statusColor={delayMinutes > 0 ? "#ef4444" : "#10b981"}
+              latitude={vehicleSimulating ? vehicleSimLat : 26.1445}
+              longitude={vehicleSimulating ? vehicleSimLng : 91.7362}
+            />
+
+            {/* Grid Control Board */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div>🛰️ <strong>GPS Signal:</strong> {selectedVehicleForDashboard.is_active ? 'CONNECTED' : 'DISCONNECTED'}</div>
-                  <div>🌐 <strong>Latitude:</strong> {vehicleSimulating ? vehicleSimLat.toFixed(6) : '26.144500'}</div>
-                  <div>🌐 <strong>Longitude:</strong> {vehicleSimulating ? vehicleSimLng.toFixed(6) : '91.736200'}</div>
-                  <div>⚡ <strong>Current Speed:</strong> {vehicleSimulating ? vehicleSimSpeed : '0'} km/h</div>
-                  <div>🛣️ <strong>Current Segment:</strong> Guwahati ➔ Nongpoh (Route Stop #1)</div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  {!vehicleSimulating ? (
-                    <button 
-                      onClick={() => {
-                        if (!selectedVehicleForDashboard.is_active) {
-                          alert('Please toggle the vehicle device status to ONLINE first.');
-                          return;
-                        }
-                        setVehicleSimulating(true);
-                        setVehicleSimSpeed(45);
-                        const interval = setInterval(() => {
-                          setVehicleSimLat(prev => prev + (Math.random() - 0.5) * 0.001);
-                          setVehicleSimLng(prev => prev + (Math.random() - 0.5) * 0.001);
-                          setVehicleSimSpeed(() => Math.round(40 + Math.random() * 25));
-                        }, 3000);
-                        setVehicleSimInterval(interval);
-                      }}
-                      className="btn btn-primary" 
-                      style={{ flex: 1, padding: '10px', fontSize: '0.8rem', margin: 0 }}
-                    >
-                      🚀 Start Route Tracking
-                    </button>
-                  ) : (
-                    <button 
-                      onClick={() => {
-                        clearInterval(vehicleSimInterval);
-                        setVehicleSimulating(false);
-                        setVehicleSimSpeed(0);
-                      }}
-                      className="btn btn-secondary" 
-                      style={{ flex: 1, padding: '10px', fontSize: '0.8rem', margin: 0, borderColor: '#ef4444', color: '#f87171' }}
-                    >
-                      ⏹️ Stop Tracking
-                    </button>
-                  )}
-                </div>
-
-                {/* Delay Control */}
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Trip Delay Manager</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Notify passengers in real-time</div>
+              {/* Left: GPS Simulation */}
+              <div className="glass-panel" style={{ padding: '24px' }}>
+                <h3 style={{ fontSize: '1.15rem', marginBottom: '16px', fontWeight: 600, color: 'var(--accent-primary)' }}>📍 Live GPS & Tracking Simulator</h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div>🛰️ <strong>GPS Signal:</strong> {selectedVehicleForDashboard.is_active ? 'CONNECTED' : 'DISCONNECTED'}</div>
+                    <div>🌐 <strong>Latitude:</strong> {vehicleSimulating ? vehicleSimLat.toFixed(6) : '26.144500'}</div>
+                    <div>🌐 <strong>Longitude:</strong> {vehicleSimulating ? vehicleSimLng.toFixed(6) : '91.736200'}</div>
+                    <div>⚡ <strong>Current Speed:</strong> {vehicleSimulating ? vehicleSimSpeed : '0'} km/h</div>
+                    <div>🛣️ <strong>Current Segment:</strong> {source} ➔ {destination}</div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <button 
-                      onClick={() => setDelayMinutes(p => Math.max(0, p - 5))} 
-                      className="btn btn-secondary" 
-                      style={{ padding: '4px 10px', margin: 0, fontSize: '0.8rem' }}
-                    >
-                      -
-                    </button>
-                    <span style={{ fontSize: '0.9rem', fontWeight: 'bold', minWidth: '40px', textAlign: 'center', color: delayMinutes > 0 ? '#fbbf24' : 'var(--text-main)' }}>
-                      {delayMinutes}m
-                    </span>
-                    <button 
-                      onClick={() => setDelayMinutes(p => p + 5)} 
-                      className="btn btn-secondary" 
-                      style={{ padding: '4px 10px', margin: 0, fontSize: '0.8rem' }}
-                    >
-                      +
-                    </button>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    {!vehicleSimulating ? (
+                      <button 
+                        onClick={() => {
+                          if (!selectedVehicleForDashboard.is_active) {
+                            alert('Please toggle the vehicle device status to ONLINE first.');
+                            return;
+                          }
+                          setVehicleSimulating(true);
+                          setVehicleSimSpeed(45);
+                          const interval = setInterval(() => {
+                            setVehicleSimLat(prev => prev + (Math.random() - 0.5) * 0.001);
+                            setVehicleSimLng(prev => prev + (Math.random() - 0.5) * 0.001);
+                            setVehicleSimSpeed(() => Math.round(40 + Math.random() * 25));
+                          }, 3000);
+                          setVehicleSimInterval(interval);
+                        }}
+                        className="btn btn-primary" 
+                        style={{ flex: 1, padding: '10px', fontSize: '0.8rem', margin: 0 }}
+                      >
+                        🚀 Start Route Tracking
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => {
+                          clearInterval(vehicleSimInterval);
+                          setVehicleSimulating(false);
+                          setVehicleSimSpeed(0);
+                        }}
+                        className="btn btn-secondary" 
+                        style={{ flex: 1, padding: '10px', fontSize: '0.8rem', margin: 0, borderColor: '#ef4444', color: '#f87171' }}
+                      >
+                        ⏹️ Stop Tracking
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Delay Control */}
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Trip Delay Manager</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Notify passengers in real-time</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button 
+                        onClick={() => setDelayMinutes(p => Math.max(0, p - 5))} 
+                        className="btn btn-secondary" 
+                        style={{ padding: '4px 10px', margin: 0, fontSize: '0.8rem' }}
+                      >
+                        -
+                      </button>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 'bold', minWidth: '40px', textAlign: 'center', color: delayMinutes > 0 ? '#fbbf24' : 'var(--text-main)' }}>
+                        {delayMinutes}m
+                      </span>
+                      <button 
+                        onClick={() => setDelayMinutes(p => p + 5)} 
+                        className="btn btn-secondary" 
+                        style={{ padding: '4px 10px', margin: 0, fontSize: '0.8rem' }}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Passenger Manifest List */}
+              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
+                <h3 style={{ fontSize: '1.15rem', marginBottom: '16px', fontWeight: 600, color: 'var(--accent-secondary)' }}>👥 Passenger Manifest</h3>
+                
+                <div style={{ overflowX: 'auto', flex: 1 }}>
+                  <table className="responsive-table" style={{ fontSize: '0.8rem', width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                        <th style={{ padding: '8px 4px' }}>Name</th>
+                        <th style={{ padding: '8px 4px' }}>Seat</th>
+                        <th style={{ padding: '8px 4px' }}>Route</th>
+                        <th style={{ padding: '8px 4px' }}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeTrip ? (
+                        stats.recent_bookings.filter(b => b.trip_details.full_route === activeTrip.full_route).map((booking: any) => (
+                          <tr key={booking.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                            <td style={{ padding: '8px 4px' }}><strong>{booking.passenger_name}</strong><br/><span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{booking.passenger_phone}</span></td>
+                            <td style={{ padding: '8px 4px' }}>Seat {booking.seat_number}</td>
+                            <td style={{ padding: '8px 4px' }}>{booking.trip_details.full_route}</td>
+                            <td style={{ padding: '8px 4px', color: ['approved', 'paid', 'completed'].includes(booking.status) ? '#34d399' : '#fbbf24' }}>{booking.status.toUpperCase()}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                          <td style={{ padding: '8px 4px' }}><strong>Kashyap Abhijeet</strong><br/><span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>+91 98765 43210</span></td>
+                          <td style={{ padding: '8px 4px' }}>Seat 3</td>
+                          <td style={{ padding: '8px 4px' }}>Guwahati ➔ Shillong</td>
+                          <td style={{ padding: '8px 4px', color: '#34d399' }}>PAID</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Grid: Analytics & Documents */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+              {/* Analytics */}
+              <div className="glass-panel" style={{ padding: '24px' }}>
+                <h3 style={{ fontSize: '1.15rem', marginBottom: '16px', fontWeight: 600 }}>📊 Performance Analytics</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>On-Time Rate</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#34d399' }}>98.2%</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Operator Rating</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#fbbf24' }}>★ 4.90</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Trips Completed</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>42</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Daily Earnings</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#34d399' }}>₹3,450</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Documents */}
+              <div className="glass-panel" style={{ padding: '24px' }}>
+                <h3 style={{ fontSize: '1.15rem', marginBottom: '16px', fontWeight: 600 }}>📄 Vehicle Registration Documents</h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Registration Certificate (RC)</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Uploaded on vehicle creation</div>
+                    </div>
+                    {selectedVehicleForDashboard.rc_url ? (
+                      <a 
+                        href={`${api.defaults.baseURL?.replace('/api/transport/', '')}${selectedVehicleForDashboard.rc_url}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="btn btn-secondary btn-inline" 
+                        style={{ padding: '6px 12px', fontSize: '0.75rem', margin: 0 }}
+                      >
+                        View RC File
+                      </a>
+                    ) : (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No document</span>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Vehicle Photo</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Exterior vehicle verification</div>
+                    </div>
+                    {selectedVehicleForDashboard.vehicle_photo_url ? (
+                      <a 
+                        href={`${api.defaults.baseURL?.replace('/api/transport/', '')}${selectedVehicleForDashboard.vehicle_photo_url}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="btn btn-secondary btn-inline" 
+                        style={{ padding: '6px 12px', fontSize: '0.75rem', margin: 0 }}
+                      >
+                        View Photo
+                      </a>
+                    ) : (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No photo</span>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Right: Passenger Manifest List */}
-            <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
-              <h3 style={{ fontSize: '1.15rem', marginBottom: '16px', fontWeight: 600, color: 'var(--accent-secondary)' }}>👥 Passenger Manifest</h3>
-              
-              <div style={{ overflowX: 'auto', flex: 1 }}>
-                <table className="responsive-table" style={{ fontSize: '0.8rem', width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                      <th style={{ padding: '8px 4px' }}>Name</th>
-                      <th style={{ padding: '8px 4px' }}>Seat</th>
-                      <th style={{ padding: '8px 4px' }}>Route</th>
-                      <th style={{ padding: '8px 4px' }}>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* Mocked/Real Booking Passenger manifest */}
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                      <td style={{ padding: '8px 4px' }}><strong>Kashyap Abhijeet</strong><br/><span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>+91 98765 43210</span></td>
-                      <td style={{ padding: '8px 4px' }}>Seat 3</td>
-                      <td style={{ padding: '8px 4px' }}>Guwahati ➔ Shillong</td>
-                      <td style={{ padding: '8px 4px', color: '#34d399' }}>PAID</td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                      <td style={{ padding: '8px 4px' }}><strong>Sachin Kumar</strong><br/><span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>+91 99887 76655</span></td>
-                      <td style={{ padding: '8px 4px' }}>Seat 4</td>
-                      <td style={{ padding: '8px 4px' }}>Nongpoh ➔ Shillong</td>
-                      <td style={{ padding: '8px 4px', color: '#fbbf24' }}>CONFIRMED</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
           </div>
-
-          {/* Bottom Grid: Analytics & Documents */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-            {/* Analytics */}
-            <div className="glass-panel" style={{ padding: '24px' }}>
-              <h3 style={{ fontSize: '1.15rem', marginBottom: '16px', fontWeight: 600 }}>📊 Performance Analytics</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>On-Time Rate</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#34d399' }}>98.2%</div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Operator Rating</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#fbbf24' }}>★ 4.90</div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Trips Completed</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>42</div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Daily Earnings</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#34d399' }}>₹3,450</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Documents */}
-            <div className="glass-panel" style={{ padding: '24px' }}>
-              <h3 style={{ fontSize: '1.15rem', marginBottom: '16px', fontWeight: 600 }}>📄 Vehicle Registration Documents</h3>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                  <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Registration Certificate (RC)</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Uploaded on vehicle creation</div>
-                  </div>
-                  {selectedVehicleForDashboard.rc_url ? (
-                    <a 
-                      href={`${api.defaults.baseURL?.replace('/api/transport/', '')}${selectedVehicleForDashboard.rc_url}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="btn btn-secondary btn-inline" 
-                      style={{ padding: '6px 12px', fontSize: '0.75rem', margin: 0 }}
-                    >
-                      View RC File
-                    </a>
-                  ) : (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No document</span>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                  <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Vehicle Photo</div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Exterior vehicle verification</div>
-                  </div>
-                  {selectedVehicleForDashboard.vehicle_photo_url ? (
-                    <a 
-                      href={`${api.defaults.baseURL?.replace('/api/transport/', '')}${selectedVehicleForDashboard.vehicle_photo_url}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="btn btn-secondary btn-inline" 
-                      style={{ padding: '6px 12px', fontSize: '0.75rem', margin: 0 }}
-                    >
-                      View Photo
-                    </a>
-                  ) : (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No photo</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      )}
+        );
+      })()}
 
       {activeTab === 'edit-profile' && (
         <div className="glass-panel" style={{ padding: '30px', maxWidth: '600px', margin: '0 auto' }}>
