@@ -95,9 +95,39 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
 
   try {
     const jwtSecret = process.env.SUPABASE_JWT_SECRET;
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_KEY;
     let payload: any = null;
 
-    if (jwtSecret) {
+    if (supabaseUrl && supabaseKey) {
+      try {
+        // Validate token asymmetrically by calling Supabase Auth getUser endpoint
+        const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+          method: 'GET',
+          headers: {
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.error_description || errorData.error || `HTTP error ${response.status}`);
+        }
+        const userData = await response.json();
+        payload = {
+          sub: userData.id,
+          email: userData.email,
+          user_metadata: userData.user_metadata
+        };
+      } catch (err: any) {
+        console.error('Asymmetric verification failed via Supabase API, trying symmetric verification:', err.message);
+        if (jwtSecret) {
+          payload = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] });
+        } else {
+          throw err;
+        }
+      }
+    } else if (jwtSecret) {
       // Validate token using HS256 secret provided by Supabase
       payload = jwt.verify(token, jwtSecret, { algorithms: ['HS256'] });
     } else {

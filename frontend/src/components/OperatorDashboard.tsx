@@ -96,6 +96,15 @@ interface Stats {
   total_revenue: number;
   total_passengers: number;
   recent_bookings: Booking[];
+  bookings_status_counts?: {
+    confirmed: number;
+    cancelled: number;
+    pending: number;
+  };
+  earnings_chart_data?: Array<{
+    date: string;
+    amount: number;
+  }>;
 }
 
 interface OperatorDashboardProps {
@@ -762,64 +771,58 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
           🎛️ Dashboard
         </span>
         <span 
-          onClick={() => { setActiveTab('trips'); setManifestTrip(null); }} 
-          className={`scrollable-tab-item ${activeTab === 'trips' ? 'active' : ''}`}
+          onClick={() => { setActiveTab('edit-profile'); setManifestTrip(null); }} 
+          className={`scrollable-tab-item ${activeTab === 'edit-profile' ? 'active' : ''}`}
         >
-          📅 Trips
-        </span>
-        <span 
-          onClick={() => { setActiveTab('trips'); setManifestTrip(null); }} 
-          className="scrollable-tab-item"
-        >
-          📋 Bookings
+          👤 Step 1: Profile & Settings
         </span>
         <span 
           onClick={() => { setActiveTab('create-vehicle'); setManifestTrip(null); }} 
           className={`scrollable-tab-item ${activeTab === 'create-vehicle' ? 'active' : ''}`}
         >
-          🚗 Vehicles
+          🚗 Step 2: Register Vehicles
         </span>
         <span 
           onClick={() => { setActiveTab('fleet-dashboard'); setManifestTrip(null); }} 
           className={`scrollable-tab-item ${activeTab === 'fleet-dashboard' ? 'active' : ''}`}
         >
-          🚚 Fleet
+          🚚 Step 2.1: Fleet Directory
         </span>
         <span 
           onClick={() => { setActiveTab('create-route'); setManifestTrip(null); }} 
           className={`scrollable-tab-item ${activeTab === 'create-route' ? 'active' : ''}`}
         >
-          🗺️ Routes
+          🗺️ Step 3: Create Routes
+        </span>
+        <span 
+          onClick={() => { setActiveTab('create-trip'); setManifestTrip(null); }} 
+          className={`scrollable-tab-item ${activeTab === 'create-trip' ? 'active' : ''}`}
+        >
+          📅 Step 4: Schedule Trips
+        </span>
+        <span 
+          onClick={() => { setActiveTab('trips'); setManifestTrip(null); }} 
+          className={`scrollable-tab-item ${activeTab === 'trips' ? 'active' : ''}`}
+        >
+          📋 Step 4.1: Trips & Manifests
         </span>
         <span 
           onClick={() => { setActiveTab('fleet-dashboard'); setManifestTrip(null); }} 
-          className="scrollable-tab-item"
+          className={`scrollable-tab-item ${activeTab === 'fleet-dashboard' ? 'active' : ''}`}
         >
-          💰 Earnings
+          💰 Step 5: Earnings Analytics
         </span>
         <span 
           onClick={() => { setActiveTab('vehicle-dashboard'); setManifestTrip(null); }} 
-          className="scrollable-tab-item"
+          className={`scrollable-tab-item ${activeTab === 'vehicle-dashboard' ? 'active' : ''}`}
         >
-          📍 Live Tracking
+          📍 Step 6: Live Tracking
         </span>
         <span 
           onClick={() => { setActiveTab('support-desk'); setManifestTrip(null); }} 
           className={`scrollable-tab-item ${activeTab === 'support-desk' ? 'active' : ''}`}
         >
-          💬 Support Desk
-        </span>
-        <span 
-          onClick={() => { setActiveTab('edit-profile'); setManifestTrip(null); }} 
-          className={`scrollable-tab-item ${activeTab === 'edit-profile' ? 'active' : ''}`}
-        >
-          👤 Profile
-        </span>
-        <span 
-          onClick={() => { setActiveTab('edit-profile'); setManifestTrip(null); }} 
-          className="scrollable-tab-item"
-        >
-          ⚙️ Settings
+          💬 Step 7: Support Desk
         </span>
         
         <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
@@ -838,12 +841,15 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
         <div>
           <h1 className="gradient-text" style={{ fontSize: '2rem', marginBottom: '4px', textTransform: 'capitalize' }}>
             {activeTab === 'overview' ? 'Dashboard' : 
-             activeTab === 'create-vehicle' ? 'Vehicles' :
-             activeTab === 'fleet-dashboard' ? 'Fleet' :
-             activeTab === 'create-route' ? 'Routes' :
-             activeTab === 'vehicle-dashboard' ? 'Live Tracking' :
-             activeTab === 'edit-profile' ? 'Profile' :
-             activeTab.replace('-', ' ')}
+             activeTab === 'edit-profile' ? 'Step 1: Profile & Settings' :
+             activeTab === 'create-vehicle' ? 'Step 2: Register Vehicles (Fleet Entry)' :
+             activeTab === 'fleet-dashboard' ? 'Step 2.1 / Step 5: Fleet Directory & Earnings' :
+             activeTab === 'create-route' ? 'Step 3: Create Routes' :
+             activeTab === 'create-trip' ? 'Step 4: Schedule Trips' :
+             activeTab === 'trips' ? 'Step 4.1: Trips & Passenger Manifests' :
+             activeTab === 'vehicle-dashboard' ? 'Step 6: Live GPS Tracking Console' :
+             activeTab === 'support-desk' ? 'Step 7: Compliance Support Desk' :
+             (activeTab as string).replace('-', ' ')}
           </h1>
         </div>
         
@@ -874,311 +880,366 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
       </div>
 
       {/* Tab Contents */}
-      {activeTab === 'overview' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* First Row: Welcome banner + Metrics */}
-          <div className="responsive-grid-5">
+      {activeTab === 'overview' && (() => {
+        // Calculate dynamic properties for the Earnings Overview Line Chart
+        const chartData = stats.earnings_chart_data || [];
+        const maxAmount = Math.max(...chartData.map(d => d.amount), 0);
+        const chartMax = maxAmount > 0 ? maxAmount : 1000;
+
+        const points = chartData.map((d, i) => {
+          const x = chartData.length > 1 ? (i / (chartData.length - 1)) * 500 : 250;
+          const y = 160 - (d.amount / chartMax) * 130 - 10; // 10px padding top/bottom
+          return { x, y };
+        });
+
+        const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+        const fillPath = points.length > 0 ? `${linePath} L 500 160 L 0 160 Z` : '';
+
+        const firstDate = chartData.length > 0 ? chartData[0].date : 'N/A';
+        const middleDate = chartData.length > 15 ? chartData[Math.floor(chartData.length / 2)].date : '';
+        const lastDate = chartData.length > 0 ? chartData[chartData.length - 1].date : 'N/A';
+
+        // Calculate dynamic properties for the Bookings Donut Chart
+        const donutConfirmed = stats.bookings_status_counts?.confirmed || 0;
+        const donutCancelled = stats.bookings_status_counts?.cancelled || 0;
+        const donutPending = stats.bookings_status_counts?.pending || 0;
+        const donutTotal = donutConfirmed + donutCancelled + donutPending;
+
+        const pctConfirmed = donutTotal > 0 ? Math.round((donutConfirmed / donutTotal) * 100) : 0;
+        const pctCancelled = donutTotal > 0 ? Math.round((donutCancelled / donutTotal) * 100) : 0;
+        const pctPending = donutTotal > 0 ? Math.round((donutPending / donutTotal) * 100) : 0;
+
+        const circumference = 314;
+        const offsetConfirmed = circumference - (pctConfirmed / 100) * circumference;
+        const offsetCancelled = circumference - (pctCancelled / 100) * circumference;
+        const offsetPending = circumference - (pctPending / 100) * circumference;
+
+        const rotCancelled = -90 + (pctConfirmed / 100) * 360;
+        const rotPending = -90 + ((pctConfirmed + pctCancelled) / 100) * 360;
+
+        // Calculate unique routes operated today
+        const uniqueRoutesCount = stats.trips.reduce((acc: number[], t: Trip) => {
+          if (t.route_details && !acc.includes(t.route_details.id)) {
+            acc.push(t.route_details.id);
+          }
+          return acc;
+        }, []).length;
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             
-            {/* Welcome banner */}
-            <div className="glass-panel dashboard-welcome-card">
-              <div className="banner-text">
-                <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0369a1', fontWeight: 600 }}>Welcome back,</h3>
-                <h3 style={{ margin: '4px 0 12px 0', fontSize: '1.45rem', fontWeight: 800, color: '#0369a1' }}>{stats.operator_profile.operator_name || 'North East Travels'}</h3>
-                <span className="banner-badge">
-                  <span>✓</span> Verified Operator
-                </span>
-              </div>
-              <img 
-                className="banner-bus-img" 
-                src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?q=80&w=300" 
-                alt="NE Explore Blue Bus" 
-              />
-            </div>
-
-            {/* Metrics cards */}
-            <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '8px' }}>Total Revenue</div>
-                <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--text-main)' }}>₹ {stats.total_revenue > 0 ? stats.total_revenue.toLocaleString() : '12,45,000'}</div>
-              </div>
-              <div style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 600, marginTop: '8px' }}>
-                ▲ +12.5% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>from last month</span>
-              </div>
-            </div>
-
-            <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '8px' }}>Total Bookings</div>
-                <div style={{ fontSize: '1.6rem', fontWeight: 700 }}>{stats.total_passengers > 0 ? stats.total_passengers : '1,234'}</div>
-              </div>
-              <div style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 600, marginTop: '8px' }}>
-                ▲ +8.2% <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>from last month</span>
-              </div>
-            </div>
-
-            <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '8px' }}>Active Vehicles</div>
-                <div style={{ fontSize: '1.6rem', fontWeight: 700 }}>{stats.active_vehicles_count > 0 ? stats.active_vehicles_count : '23'}</div>
-              </div>
-              <div style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 600, marginTop: '8px' }}>
-                ▲ +2 <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>this week</span>
-              </div>
-            </div>
-
-            <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '8px' }}>Trips Today</div>
-                <div style={{ fontSize: '1.6rem', fontWeight: 700 }}>{stats.trips_count > 0 ? stats.trips_count : '45'}</div>
-              </div>
-              <div style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: 600, marginTop: '8px' }}>
-                On 12 Routes
-              </div>
-            </div>
-
-          </div>
-
-          {/* Second Row: Earnings Line Chart & Bookings Donut Chart */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '24px' }} className="responsive-grid-2">
-            
-            {/* Earnings Overview Line Chart */}
-            <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 600 }}>Earnings Overview</h3>
-                <select style={{ padding: '6px 12px', width: 'auto', fontSize: '0.8rem', background: 'var(--bg-tertiary)' }} defaultValue="month">
-                  <option value="month">This Month</option>
-                  <option value="week">This Week</option>
-                  <option value="year">This Year</option>
-                </select>
-              </div>
+            {/* First Row: Welcome banner + Metrics */}
+            <div className="responsive-grid-5">
               
-              {/* SVG Line Chart representing the earnings path curve */}
-              <div style={{ width: '100%', height: '200px', display: 'flex', alignItems: 'flex-end', position: 'relative', paddingLeft: '40px', paddingBottom: '20px' }}>
-                
-                {/* Y-Axis labels */}
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'right', width: '30px' }}>
-                  <div>₹1.5L</div>
-                  <div>₹1.0L</div>
-                  <div>₹50K</div>
-                  <div>0</div>
+              {/* Welcome banner */}
+              <div className="glass-panel dashboard-welcome-card">
+                <div className="banner-text">
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#0369a1', fontWeight: 600 }}>Welcome back,</h3>
+                  <h3 style={{ margin: '4px 0 12px 0', fontSize: '1.45rem', fontWeight: 800, color: '#0369a1' }}>{stats.operator_profile.operator_name || 'North East Travels'}</h3>
+                  <span className="banner-badge">
+                    <span>✓</span> Verified Operator
+                  </span>
                 </div>
-
-                {/* SVG Curves */}
-                <svg style={{ width: '100%', height: '100%', overflow: 'visible' }} viewBox="0 0 500 160" preserveAspectRatio="none">
-                  {/* Grid Lines */}
-                  <line x1="0" y1="0" x2="500" y2="0" stroke="rgba(0,0,0,0.05)" strokeWidth="1" />
-                  <line x1="0" y1="53" x2="500" y2="53" stroke="rgba(0,0,0,0.05)" strokeWidth="1" />
-                  <line x1="0" y1="106" x2="500" y2="106" stroke="rgba(0,0,0,0.05)" strokeWidth="1" />
-                  <line x1="0" y1="160" x2="500" y2="160" stroke="rgba(0,0,0,0.1)" strokeWidth="1" />
-
-                  {/* Gradient fill path */}
-                  <path 
-                    d="M 0 130 C 50 110, 70 120, 100 95 C 130 70, 170 85, 200 65 C 230 45, 270 110, 300 95 C 330 80, 370 70, 400 45 C 430 20, 470 30, 500 25 L 500 160 L 0 160 Z"
-                    fill="url(#chart-gradient)"
-                    opacity="0.15"
-                  />
-                  {/* Stroke path line */}
-                  <path 
-                    d="M 0 130 C 50 110, 70 120, 100 95 C 130 70, 170 85, 200 65 C 230 45, 270 110, 300 95 C 330 80, 370 70, 400 45 C 430 20, 470 30, 500 25"
-                    fill="none"
-                    stroke="var(--accent-primary)"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-
-                  {/* Defs definition for gradient area color fill */}
-                  <defs>
-                    <linearGradient id="chart-gradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--accent-primary)" />
-                      <stop offset="100%" stopColor="transparent" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-
-                {/* X-Axis labels */}
-                <div style={{ position: 'absolute', bottom: 0, left: '40px', right: 0, display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  <span>1 May</span>
-                  <span>5 May</span>
-                  <span>10 May</span>
-                  <span>15 May</span>
-                  <span>20 May</span>
-                  <span>25 May</span>
-                  <span>30 May</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Bookings Overview Donut Chart */}
-            <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: '16px' }}>Bookings Overview</h3>
-              
-              <div className="donut-container">
-                {/* SVG Circular Donut Progress Ring */}
-                <div style={{ position: 'relative', width: '120px', height: '120px', flexShrink: 0 }}>
-                  <svg width="120" height="120" viewBox="0 0 120 120">
-                    <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(0,0,0,0.05)" strokeWidth="12" />
-                    <circle 
-                      cx="60" 
-                      cy="60" 
-                      r="50" 
-                      fill="none" 
-                      stroke="var(--accent-primary)" 
-                      strokeWidth="12" 
-                      strokeDasharray="314" 
-                      strokeDashoffset="66" // 79% confirmed progress
-                      strokeLinecap="round"
-                      transform="rotate(-90 60 60)"
-                    />
-                    <circle 
-                      cx="60" 
-                      cy="60" 
-                      r="50" 
-                      fill="none" 
-                      stroke="#94a3b8" 
-                      strokeWidth="12" 
-                      strokeDasharray="314" 
-                      strokeDashoffset="273" // 13% cancelled progress
-                      strokeLinecap="round"
-                      transform="rotate(194 60 60)"
-                    />
-                    <circle 
-                      cx="60" 
-                      cy="60" 
-                      r="50" 
-                      fill="none" 
-                      stroke="#fbbf24" 
-                      strokeWidth="12" 
-                      strokeDasharray="314" 
-                      strokeDashoffset="288" // 8% pending progress
-                      strokeLinecap="round"
-                      transform="rotate(241 60 60)"
-                    />
-                  </svg>
-                  {/* Center Text inside Donut chart */}
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total</span>
-                    <strong style={{ fontSize: '1.2rem', fontWeight: 700 }}>1,234</strong>
-                  </div>
-                </div>
-
-                {/* Donut Chart Legend list details */}
-                <div className="donut-legend-list">
-                  <div className="donut-legend-item">
-                    <div className="donut-legend-label">
-                      <span className="donut-legend-dot" style={{ background: 'var(--accent-primary)' }}></span>
-                      <span>Confirmed</span>
-                    </div>
-                    <span className="donut-legend-value">976 (79%)</span>
-                  </div>
-                  
-                  <div className="donut-legend-item">
-                    <div className="donut-legend-label">
-                      <span className="donut-legend-dot" style={{ background: '#94a3b8' }}></span>
-                      <span>Cancelled</span>
-                    </div>
-                    <span className="donut-legend-value">166 (13%)</span>
-                  </div>
-
-                  <div className="donut-legend-item">
-                    <div className="donut-legend-label">
-                      <span className="donut-legend-dot" style={{ background: '#fbbf24' }}></span>
-                      <span>Pending</span>
-                    </div>
-                    <span className="donut-legend-value">102 (8%)</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Third Row: Recent Bookings Table & Live Vehicles Map */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '24px' }} className="responsive-grid-2">
-            
-            {/* Recent Bookings Table Card */}
-            <div className="glass-panel" style={{ padding: '24px', overflowX: 'auto' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 600 }}>Recent Bookings</h3>
-                <span onClick={() => setActiveTab('trips')} style={{ color: 'var(--accent-primary)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
-                  View All
-                </span>
-              </div>
-
-              <table className="responsive-table" style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.85rem' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1.5px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                    <th style={{ padding: '10px 8px', textAlign: 'left' }}>PNR</th>
-                    <th style={{ padding: '10px 8px', textAlign: 'left' }}>Passenger</th>
-                    <th style={{ padding: '10px 8px', textAlign: 'left' }}>Route</th>
-                    <th style={{ padding: '10px 8px', textAlign: 'left' }}>Date</th>
-                    <th style={{ padding: '10px 8px', textAlign: 'left' }}>Seat(s)</th>
-                    <th style={{ padding: '10px 8px', textAlign: 'left' }}>Amount</th>
-                    <th style={{ padding: '10px 8px', textAlign: 'left' }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td data-label="PNR" style={{ padding: '12px 8px' }}>NET23456</td>
-                    <td data-label="Passenger" style={{ padding: '12px 8px' }}><strong>Rohit Sharma</strong></td>
-                    <td data-label="Route" style={{ padding: '12px 8px' }}>Guwahati ➔ Shillong</td>
-                    <td data-label="Date" style={{ padding: '12px 8px' }}>20 May 2025</td>
-                    <td data-label="Seat(s)" style={{ padding: '12px 8px', fontWeight: 600 }}>A1, A2</td>
-                    <td data-label="Amount" style={{ padding: '12px 8px', color: 'var(--accent-primary)', fontWeight: 600 }}>₹1,200</td>
-                    <td data-label="Status" style={{ padding: '12px 8px' }}>
-                      <span className="status-pill approved" style={{ fontSize: '0.65rem', padding: '2px 8px' }}>Confirmed</span>
-                    </td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td data-label="PNR" style={{ padding: '12px 8px' }}>NET23457</td>
-                    <td data-label="Passenger" style={{ padding: '12px 8px' }}><strong>Priya Das</strong></td>
-                    <td data-label="Route" style={{ padding: '12px 8px' }}>Jorhat ➔ Dibrugarh</td>
-                    <td data-label="Date" style={{ padding: '12px 8px' }}>20 May 2025</td>
-                    <td data-label="Seat(s)" style={{ padding: '12px 8px', fontWeight: 600 }}>B3</td>
-                    <td data-label="Amount" style={{ padding: '12px 8px', color: 'var(--accent-primary)', fontWeight: 600 }}>₹700</td>
-                    <td data-label="Status" style={{ padding: '12px 8px' }}>
-                      <span className="status-pill approved" style={{ fontSize: '0.65rem', padding: '2px 8px' }}>Confirmed</span>
-                    </td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                    <td data-label="PNR" style={{ padding: '12px 8px' }}>NET23458</td>
-                    <td data-label="Passenger" style={{ padding: '12px 8px' }}><strong>Amit Singh</strong></td>
-                    <td data-label="Route" style={{ padding: '12px 8px' }}>Tezpur ➔ Guwahati</td>
-                    <td data-label="Date" style={{ padding: '12px 8px' }}>20 May 2025</td>
-                    <td data-label="Seat(s)" style={{ padding: '12px 8px', fontWeight: 600 }}>C1, C2</td>
-                    <td data-label="Amount" style={{ padding: '12px 8px', color: 'var(--accent-primary)', fontWeight: 600 }}>₹1,000</td>
-                    <td data-label="Status" style={{ padding: '12px 8px' }}>
-                      <span className="status-pill pending" style={{ fontSize: '0.65rem', padding: '2px 8px' }}>Pending</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            {/* Live Vehicles map card */}
-            <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 600 }}>Live Vehicles</h3>
-                <span onClick={() => { setActiveTab('vehicle-dashboard'); setSelectedVehicleForDashboard(stats.vehicles[0] || null); }} style={{ color: 'var(--accent-primary)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
-                  View All
-                </span>
-              </div>
-              
-              <div style={{ height: '160px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                <iframe 
-                  title="Live Location Map Overview"
-                  width="100%" 
-                  height="100%" 
-                  style={{ border: 0 }}
-                  src="https://maps.google.com/maps?q=Shillong&z=10&output=embed"
+                <img 
+                  className="banner-bus-img" 
+                  src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?q=80&w=300" 
+                  alt="NE Explore Blue Bus" 
                 />
               </div>
+
+              {/* Metrics cards */}
+              <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '8px' }}>Total Revenue</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--text-main)' }}>₹ {stats.total_revenue.toLocaleString()}</div>
+                </div>
+                <div style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 600, marginTop: '8px' }}>
+                  ▲ Real time <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>from database bookings</span>
+                </div>
+              </div>
+
+              <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '8px' }}>Total Bookings</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 700 }}>{stats.total_passengers}</div>
+                </div>
+                <div style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 600, marginTop: '8px' }}>
+                  ▲ Verified <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>passenger tickets</span>
+                </div>
+              </div>
+
+              <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '8px' }}>Active Vehicles</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 700 }}>{stats.active_vehicles_count}</div>
+                </div>
+                <div style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 600, marginTop: '8px' }}>
+                  ✓ Approved <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>fleet count</span>
+                </div>
+              </div>
+
+              <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', marginBottom: '8px' }}>Trips Today</div>
+                  <div style={{ fontSize: '1.6rem', fontWeight: 700 }}>{stats.trips_count}</div>
+                </div>
+                <div style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: 600, marginTop: '8px' }}>
+                  On {uniqueRoutesCount} active routes
+                </div>
+              </div>
+
+            </div>
+
+            {/* Second Row: Earnings Line Chart & Bookings Donut Chart */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '24px' }} className="responsive-grid-2">
+              
+              {/* Earnings Overview Line Chart */}
+              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 600 }}>Earnings Overview</h3>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: 'var(--bg-tertiary)', padding: '4px 8px', borderRadius: '4px' }}>
+                    Past 30 Days
+                  </span>
+                </div>
+                
+                {/* SVG Line Chart representing the earnings path curve */}
+                <div style={{ width: '100%', height: '200px', display: 'flex', alignItems: 'flex-end', position: 'relative', paddingLeft: '40px', paddingBottom: '20px' }}>
+                  
+                  {/* Y-Axis labels */}
+                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'right', width: '35px' }}>
+                    <div>₹{chartMax.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                    <div>₹{(chartMax / 2).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                    <div>0</div>
+                  </div>
+
+                  {/* SVG Curves */}
+                  <svg style={{ width: '100%', height: '100%', overflow: 'visible' }} viewBox="0 0 500 160" preserveAspectRatio="none">
+                    {/* Grid Lines */}
+                    <line x1="0" y1="0" x2="500" y2="0" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                    <line x1="0" y1="80" x2="500" y2="80" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                    <line x1="0" y1="160" x2="500" y2="160" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+
+                    {points.length > 0 && (
+                      <>
+                        {/* Gradient fill path */}
+                        <path 
+                          d={fillPath}
+                          fill="url(#chart-gradient)"
+                          opacity="0.15"
+                        />
+                        {/* Stroke path line */}
+                        <path 
+                          d={linePath}
+                          fill="none"
+                          stroke="var(--accent-primary)"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                        />
+                      </>
+                    )}
+
+                    {/* Defs definition for gradient area color fill */}
+                    <defs>
+                      <linearGradient id="chart-gradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--accent-primary)" />
+                        <stop offset="100%" stopColor="transparent" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+
+                  {/* X-Axis labels */}
+                  <div style={{ position: 'absolute', bottom: 0, left: '40px', right: 0, display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <span>{firstDate}</span>
+                    <span>{middleDate}</span>
+                    <span>{lastDate}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bookings Overview Donut Chart */}
+              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: '16px' }}>Bookings Overview</h3>
+                
+                <div className="donut-container">
+                  {/* SVG Circular Donut Progress Ring */}
+                  <div style={{ position: 'relative', width: '120px', height: '120px', flexShrink: 0 }}>
+                    <svg width="120" height="120" viewBox="0 0 120 120">
+                      <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="12" />
+                      {donutTotal > 0 && (
+                        <>
+                          {donutConfirmed > 0 && (
+                            <circle 
+                              cx="60" 
+                              cy="60" 
+                              r="50" 
+                              fill="none" 
+                              stroke="var(--accent-primary)" 
+                              strokeWidth="12" 
+                              strokeDasharray="314" 
+                              strokeDashoffset={offsetConfirmed}
+                              strokeLinecap="round"
+                              transform="rotate(-90 60 60)"
+                            />
+                          )}
+                          {donutCancelled > 0 && (
+                            <circle 
+                              cx="60" 
+                              cy="60" 
+                              r="50" 
+                              fill="none" 
+                              stroke="#94a3b8" 
+                              strokeWidth="12" 
+                              strokeDasharray="314" 
+                              strokeDashoffset={offsetCancelled}
+                              strokeLinecap="round"
+                              transform={`rotate(${rotCancelled} 60 60)`}
+                            />
+                          )}
+                          {donutPending > 0 && (
+                            <circle 
+                              cx="60" 
+                              cy="60" 
+                              r="50" 
+                              fill="none" 
+                              stroke="#fbbf24" 
+                              strokeWidth="12" 
+                              strokeDasharray="314" 
+                              strokeDashoffset={offsetPending}
+                              strokeLinecap="round"
+                              transform={`rotate(${rotPending} 60 60)`}
+                            />
+                          )}
+                        </>
+                      )}
+                    </svg>
+                    {/* Center Text inside Donut chart */}
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total</span>
+                      <strong style={{ fontSize: '1.2rem', fontWeight: 700 }}>{donutTotal}</strong>
+                    </div>
+                  </div>
+
+                  {/* Donut Chart Legend list details */}
+                  <div className="donut-legend-list">
+                    <div className="donut-legend-item">
+                      <div className="donut-legend-label">
+                        <span className="donut-legend-dot" style={{ background: 'var(--accent-primary)' }}></span>
+                        <span>Confirmed</span>
+                      </div>
+                      <span className="donut-legend-value">{donutConfirmed} ({pctConfirmed}%)</span>
+                    </div>
+                    
+                    <div className="donut-legend-item">
+                      <div className="donut-legend-label">
+                        <span className="donut-legend-dot" style={{ background: '#94a3b8' }}></span>
+                        <span>Cancelled</span>
+                      </div>
+                      <span className="donut-legend-value">{donutCancelled} ({pctCancelled}%)</span>
+                    </div>
+
+                    <div className="donut-legend-item">
+                      <div className="donut-legend-label">
+                        <span className="donut-legend-dot" style={{ background: '#fbbf24' }}></span>
+                        <span>Pending</span>
+                      </div>
+                      <span className="donut-legend-value">{donutPending} ({pctPending}%)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Third Row: Recent Bookings Table & Live Vehicles Map */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '24px' }} className="responsive-grid-2">
+              
+              {/* Recent Bookings Table Card */}
+              <div className="glass-panel" style={{ padding: '24px', overflowX: 'auto' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 600 }}>Recent Bookings</h3>
+                  <span onClick={() => setActiveTab('trips')} style={{ color: 'var(--accent-primary)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+                    View All
+                  </span>
+                </div>
+
+                <table className="responsive-table" style={{ borderCollapse: 'collapse', width: '100%', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1.5px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                      <th style={{ padding: '10px 8px', textAlign: 'left' }}>PNR</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'left' }}>Passenger</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'left' }}>Route</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'left' }}>Date</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'left' }}>Seat(s)</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'left' }}>Amount</th>
+                      <th style={{ padding: '10px 8px', textAlign: 'left' }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.recent_bookings && stats.recent_bookings.length > 0 ? (
+                      stats.recent_bookings.map((booking: any) => {
+                        const pnr = booking.booking_ref;
+                        const passenger = booking.passenger_name || 'Traveler';
+                        const route = booking.trip_details?.full_route || 'N/A';
+                        const date = new Date(booking.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+                        const seat = booking.seat_number;
+                        const amount = Number(booking.segment_price || booking.price).toLocaleString();
+                        
+                        let statusClass = 'pending';
+                        if (['approved', 'paid', 'completed'].includes(booking.status)) statusClass = 'approved';
+                        if (['cancelled', 'rejected'].includes(booking.status)) statusClass = 'rejected';
+
+                        return (
+                          <tr key={booking.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                            <td data-label="PNR" style={{ padding: '12px 8px' }}>{pnr}</td>
+                            <td data-label="Passenger" style={{ padding: '12px 8px' }}><strong>{passenger}</strong></td>
+                            <td data-label="Route" style={{ padding: '12px 8px' }}>{route}</td>
+                            <td data-label="Date" style={{ padding: '12px 8px' }}>{date}</td>
+                            <td data-label="Seat(s)" style={{ padding: '12px 8px', fontWeight: 600 }}>{seat}</td>
+                            <td data-label="Amount" style={{ padding: '12px 8px', color: 'var(--accent-primary)', fontWeight: 600 }}>₹{amount}</td>
+                            <td data-label="Status" style={{ padding: '12px 8px' }}>
+                              <span className={`status-pill ${statusClass}`} style={{ fontSize: '0.65rem', padding: '2px 8px' }}>
+                                {booking.status_display || booking.status}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={7} style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                          No recent bookings found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Live Vehicles map card */}
+              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 600 }}>Live Vehicles</h3>
+                  <span onClick={() => { setActiveTab('vehicle-dashboard'); setSelectedVehicleForDashboard(stats.vehicles[0] || null); }} style={{ color: 'var(--accent-primary)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
+                    View All
+                  </span>
+                </div>
+                
+                <div style={{ height: '220px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+                  <iframe 
+                    title="Live Location Map Overview"
+                    width="100%" 
+                    height="100%" 
+                    style={{ border: 0 }}
+                    src="https://maps.google.com/maps?q=Shillong&z=10&output=embed"
+                  />
+                </div>
+              </div>
+
             </div>
 
           </div>
-
-        </div>
-      )}
+        );
+      })()}
 
       {activeTab === 'trips' && (
         <div className="glass-panel" style={{ padding: '30px' }}>
@@ -1503,8 +1564,82 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
               )}
             </div>
           ) : (
-            <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0' }}>
-              Please select a trip from the <strong>Fleet Overview</strong> departures list to display the passenger manifest.
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <h3 className="gradient-text" style={{ fontSize: '1.5rem', margin: 0 }}>Step 4.1: Trips & Passenger Manifests</h3>
+                <button 
+                  onClick={() => setActiveTab('create-trip')} 
+                  className="btn btn-primary btn-inline"
+                  style={{ padding: '6px 14px', fontSize: '0.85rem' }}
+                >
+                  ➕ Schedule New Trip
+                </button>
+              </div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '24px' }}>
+                Select a scheduled departure below to view and manage its passenger manifest, check in passengers, update delays, or start/stop tracking.
+              </p>
+
+              {stats.trips.length === 0 ? (
+                <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0', border: '1px dashed var(--border-color)', borderRadius: '12px' }}>
+                  No upcoming trips scheduled yet. Click <strong>Schedule New Trip</strong> above to get started.
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="responsive-table" style={{ width: '100%', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>
+                        <th style={{ padding: '12px 8px', textAlign: 'left' }}>Route</th>
+                        <th style={{ padding: '12px 8px', textAlign: 'left' }}>Departure</th>
+                        <th style={{ padding: '12px 8px', textAlign: 'left' }}>Vehicle</th>
+                        <th style={{ padding: '12px 8px', textAlign: 'left' }}>Available Seats</th>
+                        <th style={{ padding: '12px 8px', textAlign: 'left' }}>Status</th>
+                        <th style={{ padding: '12px 8px', textAlign: 'center' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.trips.map((trip: Trip) => (
+                        <tr key={trip.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                          <td data-label="Route" style={{ padding: '16px 8px' }}>
+                            <strong>{trip.full_route}</strong>
+                          </td>
+                          <td data-label="Departure" style={{ padding: '16px 8px' }}>
+                            <div>{trip.card_date}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{trip.card_time}</div>
+                          </td>
+                          <td data-label="Vehicle" style={{ padding: '16px 8px' }}>
+                            <div>{trip.vehicle_details?.name || 'N/A'}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{trip.vehicle_details?.vehicle_number || ''}</div>
+                          </td>
+                          <td data-label="Available Seats" style={{ padding: '16px 8px', fontWeight: 600 }}>
+                            {trip.available_seats} Seats
+                          </td>
+                          <td data-label="Status" style={{ padding: '16px 8px' }}>
+                            <span style={{ 
+                              padding: '4px 8px', 
+                              borderRadius: '4px', 
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              background: trip.status === 'departed' ? 'rgba(16,185,129,0.1)' : trip.status === 'completed' ? 'rgba(59,130,246,0.1)' : 'rgba(245,158,11,0.1)',
+                              color: trip.status === 'departed' ? '#34d399' : trip.status === 'completed' ? '#60a5fa' : '#fbbf24'
+                            }}>
+                              {trip.status.toUpperCase()}
+                            </span>
+                          </td>
+                          <td data-label="Action" style={{ padding: '16px 8px', textAlign: 'center' }}>
+                            <button 
+                              onClick={() => handleViewManifest(trip)} 
+                              className="btn btn-primary" 
+                              style={{ padding: '6px 12px', fontSize: '0.8rem', margin: 0 }}
+                            >
+                              📋 View Manifest
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1920,9 +2055,8 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
               {stats.vehicles.length === 0 ? (
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', padding: '10px' }}>No vehicles registered yet.</div>
               ) : (
-                stats.vehicles.map((v: any, idx: number) => {
-                  // Distribute earnings mockingly or compute
-                  const vehicleEarnings = Math.max(0, Math.round((stats.total_revenue * (idx === 0 ? 0.6 : idx === 1 ? 0.3 : 0.1))));
+                stats.vehicles.map((v: any) => {
+                  const vehicleEarnings = v.revenue || 0;
                   const maxEarnings = stats.total_revenue || 1;
                   const percentage = Math.round((vehicleEarnings / maxEarnings) * 100);
                   
@@ -1930,7 +2064,7 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
                     <div key={v.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem' }}>
                         <span><strong>{v.name}</strong> ({v.vehicle_number})</span>
-                        <span>₹{vehicleEarnings} ({percentage}%)</span>
+                        <span>₹{vehicleEarnings.toLocaleString()} ({percentage}%)</span>
                       </div>
                       <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${percentage}%`, background: 'var(--accent-primary)', borderRadius: '4px' }}></div>

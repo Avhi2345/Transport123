@@ -940,16 +940,68 @@ export async function getOperatorDashboard(req: AuthRequest, res: Response) {
       orderBy: { departure_datetime: 'asc' }
     });
 
-    const validStatuses = [BookingStatus.approved, BookingStatus.paid, BookingStatus.waiting_confirmation, BookingStatus.completed];
-    const bookings = await prisma.booking.findMany({
+    // Query all bookings for the operator's fleet to get accurate status distribution
+    const allBookings = await prisma.booking.findMany({
       where: {
-        trip: { vehicle: { operator_id: req.user.id } },
-        status: { in: validStatuses }
+        trip: { vehicle: { operator_id: req.user.id } }
+      },
+      include: {
+        trip: { select: { vehicle_id: true } }
       }
     });
 
-    const totalRevenue = bookings.reduce((sum, b) => sum + Number(b.segment_price || b.price), 0);
-    const totalPassengers = bookings.length;
+    const validStatuses: BookingStatus[] = [BookingStatus.approved, BookingStatus.paid, BookingStatus.waiting_confirmation, BookingStatus.completed];
+    const bookingsForRevenue = allBookings.filter(b => validStatuses.includes(b.status));
+
+    // Calculate total revenue and passengers from real confirmed/paid bookings
+    const totalRevenue = bookingsForRevenue.reduce((sum, b) => sum + Number(b.segment_price || b.price), 0);
+    const totalPassengers = bookingsForRevenue.length;
+
+    // Calculate booking status counts for the donut chart
+    const confirmedStatuses: BookingStatus[] = [BookingStatus.approved, BookingStatus.paid, BookingStatus.completed];
+    const confirmedCount = allBookings.filter(b => confirmedStatuses.includes(b.status)).length;
+    const cancelledCount = allBookings.filter(b => b.status === BookingStatus.cancelled).length;
+    
+    const pendingStatuses: BookingStatus[] = [BookingStatus.pending, BookingStatus.waiting_confirmation];
+    const pendingCount = allBookings.filter(b => pendingStatuses.includes(b.status)).length;
+
+    // Calculate daily earnings for the past 30 days
+    const earningsByDate: { [dateStr: string]: number } = {};
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+      earningsByDate[dateStr] = 0;
+    }
+
+    bookingsForRevenue.forEach(b => {
+      const dateStr = new Date(b.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+      if (earningsByDate[dateStr] !== undefined) {
+        earningsByDate[dateStr] += Number(b.segment_price || b.price);
+      }
+    });
+
+    const earnings_chart_data = Object.keys(earningsByDate).map(date => ({
+      date,
+      amount: earningsByDate[date]
+    }));
+
+    // Calculate actual revenue per vehicle
+    const vehicleRevenueMap: { [vehicleId: number]: number } = {};
+    vehicles.forEach(v => {
+      vehicleRevenueMap[v.id] = 0;
+    });
+    bookingsForRevenue.forEach(b => {
+      const vId = b.trip.vehicle_id;
+      if (vehicleRevenueMap[vId] !== undefined) {
+        vehicleRevenueMap[vId] += Number(b.segment_price || b.price);
+      }
+    });
+
+    const vehiclesWithRevenue = vehicles.map(v => ({
+      ...v,
+      revenue: vehicleRevenueMap[v.id] || 0
+    }));
 
     const recentBookings = await prisma.booking.findMany({
       where: { trip: { vehicle: { operator_id: req.user.id } } },
@@ -965,12 +1017,18 @@ export async function getOperatorDashboard(req: AuthRequest, res: Response) {
     return res.json({
       operator_profile: operatorProfile,
       active_vehicles_count: vehicles.filter(v => v.is_active !== false).length,
-      vehicles: vehicles,
+      vehicles: vehiclesWithRevenue,
       trips_count: upcomingTrips.length,
       trips: upcomingTrips.map(t => formatTrip(t)),
       total_revenue: totalRevenue,
       total_passengers: totalPassengers,
-      recent_bookings: recentBookings.map(formatBooking)
+      recent_bookings: recentBookings.map(formatBooking),
+      bookings_status_counts: {
+        confirmed: confirmedCount,
+        cancelled: cancelledCount,
+        pending: pendingCount
+      },
+      earnings_chart_data
     });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
