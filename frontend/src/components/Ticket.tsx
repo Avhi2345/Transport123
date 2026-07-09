@@ -241,7 +241,18 @@ export const Ticket: React.FC<TicketProps> = ({ bookingRef, onBackToSearch }) =>
   }
 
   if (!booking) {
-    return <div style={{ textAlign: 'center', padding: '40px' }}>Ticket not found.</div>;
+    return (
+      <div className="glass-panel animate-fade-in" style={{ textAlign: 'center', padding: '48px 24px', maxWidth: '500px', margin: '40px auto' }}>
+        <span style={{ fontSize: '3rem', display: 'block', marginBottom: '16px' }}>🎟️</span>
+        <h3 style={{ fontSize: '1.4rem', marginBottom: '12px' }}>No Active Bookings</h3>
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '24px', lineHeight: '1.5' }}>
+          You don't have any bookings registered to your account yet. Ready to start exploring routes?
+        </p>
+        <button onClick={onBackToSearch} className="btn btn-primary" style={{ padding: '10px 24px', fontSize: '0.9rem' }}>
+          Explore & Book Trips
+        </button>
+      </div>
+    );
   }
 
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(booking.qr_code_data)}`;
@@ -249,6 +260,25 @@ export const Ticket: React.FC<TicketProps> = ({ bookingRef, onBackToSearch }) =>
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 0', width: '100%' }}>
       
+      <div style={{ width: '100%', maxWidth: '600px', display: 'flex', justifyContent: 'flex-start', marginBottom: '16px' }}>
+        <button 
+          onClick={onBackToSearch} 
+          style={{ 
+            background: 'none', 
+            border: 'none', 
+            color: 'var(--accent-primary)', 
+            cursor: 'pointer', 
+            fontSize: '0.9rem',
+            padding: 0,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontWeight: 500
+          }}
+        >
+          ← Back to Search
+        </button>
+      </div>
       {bookingsList.length > 1 && (
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', justifyContent: 'center', width: '100%', maxWidth: '600px' }}>
           {bookingsList.map((b, idx) => (

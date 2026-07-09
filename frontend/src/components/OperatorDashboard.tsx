@@ -117,6 +117,7 @@ interface OperatorDashboardProps {
 export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSearch, onLogout, initialTab }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'trips' | 'create-trip' | 'create-route' | 'create-vehicle' | 'edit-profile' | 'fleet-dashboard' | 'vehicle-dashboard' | 'support-desk'>(initialTab || 'overview');
   const [selectedVehicleForDashboard, setSelectedVehicleForDashboard] = useState<any | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   
   // Support Widget States
   const [supportWidgetOpen, setSupportWidgetOpen] = useState(false);
@@ -755,8 +756,14 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
   return (
     <div className="animate-fade-in operator-dashboard-layout">
       
+      {/* Sidebar Backdrop Overlay on Mobile */}
+      <div 
+        className={`operator-sidebar-backdrop ${isMobileSidebarOpen ? 'open' : ''}`} 
+        onClick={() => setIsMobileSidebarOpen(false)}
+      />
+
       {/* Sidebar (Operator Console Navigation) */}
-      <div className="scrollable-tabs-container">
+      <div className={`scrollable-tabs-container ${isMobileSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-logo">
           <span style={{ fontSize: '1.6rem' }}>🚌</span>
           <div style={{ textAlign: 'left' }}>
@@ -766,61 +773,61 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
         </div>
         
         <span 
-          onClick={() => { setActiveTab('overview'); setManifestTrip(null); }} 
+          onClick={() => { setActiveTab('overview'); setManifestTrip(null); setIsMobileSidebarOpen(false); }} 
           className={`scrollable-tab-item ${activeTab === 'overview' ? 'active' : ''}`}
         >
           🎛️ Dashboard
         </span>
         <span 
-          onClick={() => { setActiveTab('edit-profile'); setManifestTrip(null); }} 
+          onClick={() => { setActiveTab('edit-profile'); setManifestTrip(null); setIsMobileSidebarOpen(false); }} 
           className={`scrollable-tab-item ${activeTab === 'edit-profile' ? 'active' : ''}`}
         >
           👤 Step 1: Profile & Settings
         </span>
         <span 
-          onClick={() => { setActiveTab('create-vehicle'); setManifestTrip(null); }} 
+          onClick={() => { setActiveTab('create-vehicle'); setManifestTrip(null); setIsMobileSidebarOpen(false); }} 
           className={`scrollable-tab-item ${activeTab === 'create-vehicle' ? 'active' : ''}`}
         >
           🚗 Step 2: Register Vehicles
         </span>
         <span 
-          onClick={() => { setActiveTab('fleet-dashboard'); setManifestTrip(null); }} 
+          onClick={() => { setActiveTab('fleet-dashboard'); setManifestTrip(null); setIsMobileSidebarOpen(false); }} 
           className={`scrollable-tab-item ${activeTab === 'fleet-dashboard' ? 'active' : ''}`}
         >
           🚚 Step 2.1: Fleet Directory
         </span>
         <span 
-          onClick={() => { setActiveTab('create-route'); setManifestTrip(null); }} 
+          onClick={() => { setActiveTab('create-route'); setManifestTrip(null); setIsMobileSidebarOpen(false); }} 
           className={`scrollable-tab-item ${activeTab === 'create-route' ? 'active' : ''}`}
         >
           🗺️ Step 3: Create Routes
         </span>
         <span 
-          onClick={() => { setActiveTab('create-trip'); setManifestTrip(null); }} 
+          onClick={() => { setActiveTab('create-trip'); setManifestTrip(null); setIsMobileSidebarOpen(false); }} 
           className={`scrollable-tab-item ${activeTab === 'create-trip' ? 'active' : ''}`}
         >
           📅 Step 4: Schedule Trips
         </span>
         <span 
-          onClick={() => { setActiveTab('trips'); setManifestTrip(null); }} 
+          onClick={() => { setActiveTab('trips'); setManifestTrip(null); setIsMobileSidebarOpen(false); }} 
           className={`scrollable-tab-item ${activeTab === 'trips' ? 'active' : ''}`}
         >
           📋 Step 4.1: Trips & Manifests
         </span>
         <span 
-          onClick={() => { setActiveTab('fleet-dashboard'); setManifestTrip(null); }} 
+          onClick={() => { setActiveTab('fleet-dashboard'); setManifestTrip(null); setIsMobileSidebarOpen(false); }} 
           className={`scrollable-tab-item ${activeTab === 'fleet-dashboard' ? 'active' : ''}`}
         >
           💰 Step 5: Earnings Analytics
         </span>
         <span 
-          onClick={() => { setActiveTab('vehicle-dashboard'); setManifestTrip(null); }} 
+          onClick={() => { setActiveTab('vehicle-dashboard'); setManifestTrip(null); setIsMobileSidebarOpen(false); }} 
           className={`scrollable-tab-item ${activeTab === 'vehicle-dashboard' ? 'active' : ''}`}
         >
           📍 Step 6: Live Tracking
         </span>
         <span 
-          onClick={() => { setActiveTab('support-desk'); setManifestTrip(null); }} 
+          onClick={() => { setActiveTab('support-desk'); setManifestTrip(null); setIsMobileSidebarOpen(false); }} 
           className={`scrollable-tab-item ${activeTab === 'support-desk' ? 'active' : ''}`}
         >
           💬 Step 7: Support Desk
@@ -828,7 +835,7 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
         
         <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
           <span 
-            onClick={onLogout || onBackToSearch} 
+            onClick={() => { if (onLogout) onLogout(); else onBackToSearch(); setIsMobileSidebarOpen(false); }} 
             className="scrollable-tab-item"
             style={{ color: 'var(--danger)', fontWeight: 600 }}
           >
@@ -838,9 +845,26 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
       </div>
 
       {/* Main Console Content Header */}
-      <div className="responsive-flex-header" style={{ marginBottom: '24px' }}>
+      <div className="responsive-flex-header" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <button 
+          onClick={() => setIsMobileSidebarOpen(true)}
+          className="mobile-sidebar-toggle btn btn-secondary btn-inline"
+          style={{
+            padding: '8px 12px',
+            fontSize: '1.25rem',
+            margin: 0,
+            cursor: 'pointer',
+            borderRadius: '8px',
+            display: 'none', // Overridden in media query
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          aria-label="Open sidebar menu"
+        >
+          ☰
+        </button>
         <div>
-          <h1 className="gradient-text" style={{ fontSize: '2rem', marginBottom: '4px', textTransform: 'capitalize' }}>
+          <h1 className="gradient-text" style={{ fontSize: '2rem', marginBottom: '4px', textTransform: 'capitalize', margin: 0 }}>
             {activeTab === 'overview' ? 'Dashboard' : 
              activeTab === 'edit-profile' ? 'Step 1: Profile & Settings' :
              activeTab === 'create-vehicle' ? 'Step 2: Register Vehicles (Fleet Entry)' :
@@ -2583,21 +2607,36 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
                   <h4 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '12px' }}>Book an Agent</h4>
                   <form onSubmit={(e) => {
                     e.preventDefault();
-                    alert('Request submitted! An onboarding assistant will contact you within 15 minutes.');
+                    const formData = new FormData(e.currentTarget);
+                    const name = formData.get('agentName') as string;
+                    const phone = formData.get('agentPhone') as string;
+                    const topicVal = formData.get('agentTopic') as string;
+                    
+                    let topicLabel = 'Fleet Onboarding Help';
+                    if (topicVal === 'verification') topicLabel = 'Verification Issue';
+                    else if (topicVal === 'payments') topicLabel = 'Earning & Payouts';
+                    else if (topicVal === 'gps') topicLabel = 'GPS & Tracking Issue';
+
+                    const message = `Hello NE Explore Onboarding Support,\n\nI would like to book an onboarding agent. Here are my details:\n\n*Name:* ${name}\n*Phone:* ${phone}\n*Query Topic:* ${topicLabel}\n\nPlease schedule a call for me. Thank you!`;
+                    
+                    const whatsappUrl = `https://wa.me/918809279640?text=${encodeURIComponent(message)}`;
+                    
+                    alert('Redirecting to WhatsApp to send booking details...');
+                    window.open(whatsappUrl, '_blank');
                   }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     <div className="responsive-grid-2" style={{ gap: '12px' }}>
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <label style={{ fontSize: '0.75rem' }}>Name</label>
-                        <input type="text" placeholder="Your Name" required defaultValue={stats?.operator_profile?.operator_name || ''} />
+                        <input name="agentName" type="text" placeholder="Your Name" required defaultValue={stats?.operator_profile?.operator_name || ''} />
                       </div>
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <label style={{ fontSize: '0.75rem' }}>Phone Number</label>
-                        <input type="text" placeholder="10-digit number" required defaultValue={stats?.operator_profile?.phone || ''} />
+                        <input name="agentPhone" type="text" placeholder="10-digit number" required defaultValue={stats?.operator_profile?.phone || ''} />
                       </div>
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label style={{ fontSize: '0.75rem' }}>Query Topic</label>
-                      <select required>
+                      <select name="agentTopic" required>
                         <option value="onboarding">Fleet Onboarding Help</option>
                         <option value="verification">Verification Issue</option>
                         <option value="payments">Earning & Payouts</option>

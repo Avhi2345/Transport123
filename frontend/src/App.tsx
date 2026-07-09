@@ -62,7 +62,7 @@ export const App: React.FC = () => {
   });
 
   // Application routing views
-  const [currentView, setCurrentView] = useState<'search' | 'booking' | 'ticket' | 'dashboard' | 'admin-dashboard'>(() => {
+  const [currentView, setCurrentView] = useState<'search' | 'booking' | 'ticket' | 'dashboard' | 'admin-dashboard' | 'auth'>(() => {
     const mockSessionStr = localStorage.getItem('mock_admin_session');
     if (mockSessionStr) {
       try {
@@ -168,7 +168,11 @@ export const App: React.FC = () => {
 
   const handleSelectTrip = (trip: Trip) => {
     setSelectedTrip(trip);
-    setCurrentView('booking');
+    if (!session) {
+      setCurrentView('auth');
+    } else {
+      setCurrentView('booking');
+    }
   };
 
   const handleBookingSuccess = (bookingRef: string) => {
@@ -184,53 +188,42 @@ export const App: React.FC = () => {
     );
   }
 
-  // If not signed in, show Auth Screen
-  if (!session) {
-    return (
-      <div className="auth-page-fullscreen">
-        {/* Logo overlay on top of animated background */}
-        <div className="auth-logo-overlay">
-          <a href="#" className="logo" style={{ color: '#ffffff', fontSize: '1.5rem', letterSpacing: '-0.03em', fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '1.4rem' }}>🚌</span> NE Explore
-          </a>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', marginTop: '4px' }}>India's Trusted Transport Platform</p>
-        </div>
-        <Auth onAuthSuccess={() => {
-          localStorage.setItem('session_login_time', Date.now().toString());
-          const mockSessionStr = localStorage.getItem('mock_admin_session');
-          if (mockSessionStr) {
-            const mockSession = JSON.parse(mockSessionStr);
-            setSession(mockSession);
-            const role = mockSession.user.user_metadata?.role || 'admin';
-            setUserProfile({ email: mockSession.user.email, role });
-            if (role === 'transport_operator') {
-              setCurrentView('dashboard');
-            } else if (role === 'admin') {
-              setCurrentView('admin-dashboard');
-            } else {
-              setSelectedBookingRef('my-bookings');
-              setCurrentView('ticket');
-            }
-          } else {
-            supabase.auth.getSession().then(({ data: { session: sess } }) => {
-              if (sess?.user) {
-                const role = sess.user.user_metadata?.role || 'traveler';
-                setUserProfile({ email: sess.user.email || '', role });
-                if (role === 'transport_operator') {
-                  setCurrentView('dashboard');
-                } else if (role === 'admin') {
-                  setCurrentView('admin-dashboard');
-                } else {
-                  setSelectedBookingRef('my-bookings');
-                  setCurrentView('ticket');
-                }
-              }
-            });
-          }
-        }} />
-      </div>
-    );
-  }
+  const handleAuthSuccess = () => {
+    localStorage.setItem('session_login_time', Date.now().toString());
+    const mockSessionStr = localStorage.getItem('mock_admin_session');
+    
+    const finalizeLogin = (role: string, email: string) => {
+      setUserProfile({ email, role });
+      if (role === 'transport_operator') {
+        setCurrentView('dashboard');
+      } else if (role === 'admin') {
+        setCurrentView('admin-dashboard');
+      } else {
+        if (selectedTrip) {
+          setCurrentView('booking');
+        } else if (selectedBookingRef === 'my-bookings') {
+          setCurrentView('ticket');
+        } else {
+          setCurrentView('search');
+        }
+      }
+    };
+
+    if (mockSessionStr) {
+      const mockSession = JSON.parse(mockSessionStr);
+      setSession(mockSession);
+      const role = mockSession.user.user_metadata?.role || 'admin';
+      finalizeLogin(role, mockSession.user.email);
+    } else {
+      supabase.auth.getSession().then(({ data: { session: sess } }) => {
+        if (sess?.user) {
+          setSession(sess);
+          const role = sess.user.user_metadata?.role || 'traveler';
+          finalizeLogin(role, sess.user.email || '');
+        }
+      });
+    }
+  };
 
 
   const isOperator = userProfile?.role === 'transport_operator';
@@ -257,50 +250,93 @@ export const App: React.FC = () => {
           
           {/* Desktop Navigation */}
           <div className="desktop-nav">
-            {userProfile?.role === 'traveler' && (
-              <button 
-                onClick={() => {
-                  setSelectedBookingRef('my-bookings');
-                  setCurrentView('ticket');
-                }} 
-                className="btn btn-secondary btn-inline" 
-                style={{ padding: '8px 16px', fontSize: '0.85rem' }}
-              >
-                My Bookings
-              </button>
+            {!session ? (
+              <>
+                <button 
+                  onClick={() => setCurrentView('search')} 
+                  className="btn btn-secondary btn-inline" 
+                  style={{ padding: '8px 16px', fontSize: '0.85rem', marginRight: '8px' }}
+                >
+                  Search Trips
+                </button>
+                <button 
+                  onClick={() => {
+                    setSelectedBookingRef('my-bookings');
+                    setCurrentView('auth');
+                  }} 
+                  className="btn btn-secondary btn-inline" 
+                  style={{ padding: '8px 16px', fontSize: '0.85rem', marginRight: '8px' }}
+                >
+                  My Bookings
+                </button>
+                <button 
+                  onClick={() => {
+                    setSelectedTrip(null);
+                    setCurrentView('auth');
+                  }} 
+                  className="btn btn-primary btn-inline" 
+                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                >
+                  Sign In
+                </button>
+              </>
+            ) : (
+              <>
+                {userProfile?.role === 'traveler' && (
+                  <>
+                    <button 
+                      onClick={() => setCurrentView('search')} 
+                      className="btn btn-secondary btn-inline" 
+                      style={{ padding: '8px 16px', fontSize: '0.85rem', marginRight: '8px' }}
+                    >
+                      Search Trips
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setSelectedBookingRef('my-bookings');
+                        setCurrentView('ticket');
+                      }} 
+                      className="btn btn-secondary btn-inline" 
+                      style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                    >
+                      My Bookings
+                    </button>
+                  </>
+                )}
+                {isOperator && (
+                  <button 
+                    onClick={() => setCurrentView(currentView === 'dashboard' ? 'search' : 'dashboard')} 
+                    className="btn btn-secondary btn-inline" 
+                    style={{ padding: '8px 16px', fontSize: '0.85rem', borderColor: 'var(--accent-secondary)', color: 'var(--accent-secondary)' }}
+                  >
+                    {currentView === 'dashboard' ? 'Search Trips' : 'Operator Dashboard'}
+                  </button>
+                )}
+                {userProfile?.role === 'admin' && (
+                  <button 
+                    onClick={() => setCurrentView(currentView === 'admin-dashboard' ? 'search' : 'admin-dashboard')} 
+                    className="btn btn-secondary btn-inline" 
+                    style={{ padding: '8px 16px', fontSize: '0.85rem', borderColor: 'var(--accent-secondary)', color: 'var(--accent-secondary)' }}
+                  >
+                    {currentView === 'admin-dashboard' ? 'Booking Console' : 'Admin Reviews'}
+                  </button>
+                )}
+                <div 
+                  onClick={handleProfileClick}
+                  style={{ textAlign: 'right', fontSize: '0.85rem', cursor: 'pointer', userSelect: 'none' }}
+                  title="Click to view/edit profile"
+                  className="profile-trigger"
+                >
+                  <div style={{ color: 'var(--text-main)', fontWeight: 500 }}>{userProfile?.email}</div>
+                  <div style={{ color: 'var(--accent-primary)', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 600 }}>
+                    {userProfile?.role === 'admin' ? 'Administrator' : isOperator ? 'Fleet Operator' : 'Traveler'}
+                  </div>
+                </div>
+                <button onClick={handleSignOut} className="btn btn-secondary btn-inline" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                  Sign Out
+                </button>
+              </>
             )}
-            {isOperator && (
-              <button 
-                onClick={() => setCurrentView(currentView === 'dashboard' ? 'search' : 'dashboard')} 
-                className="btn btn-secondary btn-inline" 
-                style={{ padding: '8px 16px', fontSize: '0.85rem', borderColor: 'var(--accent-secondary)', color: 'var(--accent-secondary)' }}
-              >
-                {currentView === 'dashboard' ? 'Search Trips' : 'Operator Dashboard'}
-              </button>
-            )}
-            {userProfile?.role === 'admin' && (
-              <button 
-                onClick={() => setCurrentView(currentView === 'admin-dashboard' ? 'search' : 'admin-dashboard')} 
-                className="btn btn-secondary btn-inline" 
-                style={{ padding: '8px 16px', fontSize: '0.85rem', borderColor: 'var(--accent-secondary)', color: 'var(--accent-secondary)' }}
-              >
-                {currentView === 'admin-dashboard' ? 'Booking Console' : 'Admin Reviews'}
-              </button>
-            )}
-            <div 
-              onClick={handleProfileClick}
-              style={{ textAlign: 'right', fontSize: '0.85rem', cursor: 'pointer', userSelect: 'none' }}
-              title="Click to view/edit profile"
-              className="profile-trigger"
-            >
-              <div style={{ color: 'var(--text-main)', fontWeight: 500 }}>{userProfile?.email}</div>
-              <div style={{ color: 'var(--accent-primary)', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 600 }}>
-                {userProfile?.role === 'admin' ? 'Administrator' : isOperator ? 'Fleet Operator' : 'Traveler'}
-              </div>
-            </div>
-            <button onClick={handleSignOut} className="btn btn-secondary btn-inline" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-              Sign Out
-            </button>
           </div>
 
           {/* Mobile Navigation Trigger */}
@@ -316,53 +352,97 @@ export const App: React.FC = () => {
 
         {/* Mobile Navigation Overlay Menu */}
         <div className={`mobile-menu-overlay ${mobileMenuOpen ? 'open' : ''}`}>
-          <div 
-            onClick={() => { handleProfileClick(); setMobileMenuOpen(false); }}
-            style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '12px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--border-color)' }}
-          >
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Signed in as</div>
-            <div style={{ color: 'var(--text-main)', fontWeight: 600, fontSize: '0.95rem', wordBreak: 'break-all' }}>{userProfile?.email}</div>
-            <div style={{ color: 'var(--accent-primary)', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 700, marginTop: '4px' }}>
-              {userProfile?.role === 'admin' ? 'Administrator' : isOperator ? 'Fleet Operator' : 'Traveler'}
-            </div>
-          </div>
+          {!session ? (
+            <>
+              <button 
+                onClick={() => { setCurrentView('search'); setMobileMenuOpen(false); }} 
+                className="btn btn-secondary"
+              >
+                Search Trips
+              </button>
+              <button 
+                onClick={() => { 
+                  setSelectedBookingRef('my-bookings'); 
+                  setCurrentView('auth'); 
+                  setMobileMenuOpen(false); 
+                }} 
+                className="btn btn-secondary"
+              >
+                My Bookings
+              </button>
+              <button 
+                onClick={() => { 
+                  setSelectedTrip(null);
+                  setCurrentView('auth'); 
+                  setMobileMenuOpen(false); 
+                }} 
+                className="btn btn-primary"
+              >
+                Sign In
+              </button>
+            </>
+          ) : (
+            <>
+              <div 
+                onClick={() => { handleProfileClick(); setMobileMenuOpen(false); }}
+                style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '12px', background: 'var(--bg-tertiary)', borderRadius: '8px', cursor: 'pointer', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}
+              >
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Signed in as</div>
+                <div style={{ color: 'var(--text-main)', fontWeight: 600, fontSize: '0.95rem', wordBreak: 'break-all' }}>{userProfile?.email}</div>
+                <div style={{ color: 'var(--accent-primary)', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 700, marginTop: '4px' }}>
+                  {userProfile?.role === 'admin' ? 'Administrator' : isOperator ? 'Fleet Operator' : 'Traveler'}
+                </div>
+              </div>
 
-          {userProfile?.role === 'traveler' && (
-            <button 
-              onClick={() => {
-                setSelectedBookingRef('my-bookings');
-                setCurrentView('ticket');
-                setMobileMenuOpen(false);
-              }} 
-              className="btn btn-secondary"
-            >
-              My Bookings
-            </button>
+              {userProfile?.role === 'traveler' && (
+                <>
+                  <button 
+                    onClick={() => {
+                      setCurrentView('search');
+                      setMobileMenuOpen(false);
+                    }} 
+                    className="btn btn-secondary"
+                  >
+                    Search Trips
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setSelectedBookingRef('my-bookings');
+                      setCurrentView('ticket');
+                      setMobileMenuOpen(false);
+                    }} 
+                    className="btn btn-secondary"
+                  >
+                    My Bookings
+                  </button>
+                </>
+              )}
+
+              {isOperator && (
+                <button 
+                  onClick={() => { setCurrentView(currentView === 'dashboard' ? 'search' : 'dashboard'); setMobileMenuOpen(false); }} 
+                  className="btn btn-secondary" 
+                  style={{ borderColor: 'var(--accent-secondary)', color: 'var(--accent-secondary)' }}
+                >
+                  {currentView === 'dashboard' ? 'Search Trips' : 'Operator Dashboard'}
+                </button>
+              )}
+
+              {userProfile?.role === 'admin' && (
+                <button 
+                  onClick={() => { setCurrentView(currentView === 'admin-dashboard' ? 'search' : 'admin-dashboard'); setMobileMenuOpen(false); }} 
+                  className="btn btn-secondary" 
+                  style={{ borderColor: 'var(--accent-secondary)', color: 'var(--accent-secondary)' }}
+                >
+                  {currentView === 'admin-dashboard' ? 'Booking Console' : 'Admin Reviews'}
+                </button>
+              )}
+
+              <button onClick={() => { handleSignOut(); setMobileMenuOpen(false); }} className="btn btn-secondary">
+                Sign Out
+              </button>
+            </>
           )}
-
-          {isOperator && (
-            <button 
-              onClick={() => { setCurrentView(currentView === 'dashboard' ? 'search' : 'dashboard'); setMobileMenuOpen(false); }} 
-              className="btn btn-secondary" 
-              style={{ borderColor: 'var(--accent-secondary)', color: 'var(--accent-secondary)' }}
-            >
-              {currentView === 'dashboard' ? 'Search Trips' : 'Operator Dashboard'}
-            </button>
-          )}
-
-          {userProfile?.role === 'admin' && (
-            <button 
-              onClick={() => { setCurrentView(currentView === 'admin-dashboard' ? 'search' : 'admin-dashboard'); setMobileMenuOpen(false); }} 
-              className="btn btn-secondary" 
-              style={{ borderColor: 'var(--accent-secondary)', color: 'var(--accent-secondary)' }}
-            >
-              {currentView === 'admin-dashboard' ? 'Booking Console' : 'Admin Reviews'}
-            </button>
-          )}
-
-          <button onClick={() => { handleSignOut(); setMobileMenuOpen(false); }} className="btn btn-secondary">
-            Sign Out
-          </button>
         </div>
       </header>
 
@@ -407,6 +487,27 @@ export const App: React.FC = () => {
         <AdminDashboard 
           onBackToSearch={() => setCurrentView('search')}
         />
+      )}
+
+      {currentView === 'auth' && (
+        <div className="auth-page-fullscreen animate-fade-in">
+          <div className="auth-logo-overlay">
+            <a href="#" onClick={(e) => { e.preventDefault(); setCurrentView('search'); }} className="logo" style={{ color: '#ffffff', fontSize: '1.5rem', letterSpacing: '-0.03em', fontWeight: 800, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '1.4rem' }}>🚌</span> NE Explore
+            </a>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', marginTop: '4px' }}>India's Trusted Transport Platform</p>
+          </div>
+          <div style={{ position: 'absolute', top: '24px', right: '32px', zIndex: 10 }}>
+            <button 
+              onClick={() => setCurrentView('search')} 
+              className="btn btn-secondary" 
+              style={{ borderColor: 'rgba(255,255,255,0.3)', color: '#ffffff', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', padding: '8px 16px', fontSize: '0.85rem' }}
+            >
+              Browse as Guest
+            </button>
+          </div>
+          <Auth onAuthSuccess={handleAuthSuccess} />
+        </div>
       )}
 
       {/* User Profile Modal */}
