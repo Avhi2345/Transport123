@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
-import { LiveTrackingVisual } from './LiveTrackingVisual';
 
 interface Vehicle {
   id: number;
@@ -111,21 +110,15 @@ interface Stats {
 interface OperatorDashboardProps {
   onBackToSearch: () => void;
   onLogout?: () => void;
-  initialTab?: 'overview' | 'trips' | 'create-trip' | 'create-route' | 'create-vehicle' | 'edit-profile' | 'fleet-dashboard' | 'vehicle-dashboard' | 'support-desk';
+  initialTab?: 'overview' | 'trips' | 'create-trip' | 'create-route' | 'create-vehicle' | 'edit-profile' | 'fleet-dashboard' | 'support-desk';
 }
 
 export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSearch, onLogout, initialTab }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'trips' | 'create-trip' | 'create-route' | 'create-vehicle' | 'edit-profile' | 'fleet-dashboard' | 'vehicle-dashboard' | 'support-desk'>(initialTab || 'overview');
-  const [selectedVehicleForDashboard, setSelectedVehicleForDashboard] = useState<any | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'trips' | 'create-trip' | 'create-route' | 'create-vehicle' | 'edit-profile' | 'fleet-dashboard' | 'support-desk'>(initialTab as any || 'overview');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isScanningQR, setIsScanningQR] = useState(false);
+  const [scannedBooking, setScannedBooking] = useState<any | null>(null);
   
-  // Support Widget States
-  const [supportWidgetOpen, setSupportWidgetOpen] = useState(false);
-  const [supportMessages, setSupportMessages] = useState<Array<{ sender: 'user' | 'bot', text: string }>>([
-    { sender: 'bot', text: 'Hello! I am your compliance & onboarding assistant. How can I help you with your fleet today?' }
-  ]);
-  const [supportInput, setSupportInput] = useState('');
-
   // Fleet Entry States
   const [fleetVehicles, setFleetVehicles] = useState<Array<{
     name: string;
@@ -151,13 +144,6 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
     photo_uploading: false
   }]);
 
-  // Vehicle Simulation states
-  const [vehicleSimulating, setVehicleSimulating] = useState(false);
-  const [vehicleSimLat, setVehicleSimLat] = useState(26.1445);
-  const [vehicleSimLng, setVehicleSimLng] = useState(91.7362);
-  const [vehicleSimSpeed, setVehicleSimSpeed] = useState(0);
-  const [vehicleSimInterval, setVehicleSimInterval] = useState<any>(null);
-
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -167,7 +153,7 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
     if (initialTab) {
       Promise.resolve().then(() => {
         if (mounted) {
-          setActiveTab(initialTab);
+          setActiveTab(initialTab as any);
         }
       });
     }
@@ -821,16 +807,10 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
           💰 Step 5: Earnings Analytics
         </span>
         <span 
-          onClick={() => { setActiveTab('vehicle-dashboard'); setManifestTrip(null); setIsMobileSidebarOpen(false); }} 
-          className={`scrollable-tab-item ${activeTab === 'vehicle-dashboard' ? 'active' : ''}`}
-        >
-          📍 Step 6: Live Tracking
-        </span>
-        <span 
           onClick={() => { setActiveTab('support-desk'); setManifestTrip(null); setIsMobileSidebarOpen(false); }} 
           className={`scrollable-tab-item ${activeTab === 'support-desk' ? 'active' : ''}`}
         >
-          💬 Step 7: Support Desk
+          💬 Step 6: Support Desk
         </span>
         
         <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
@@ -872,8 +852,7 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
              activeTab === 'create-route' ? 'Step 3: Create Routes' :
              activeTab === 'create-trip' ? 'Step 4: Schedule Trips' :
              activeTab === 'trips' ? 'Step 4.1: Trips & Passenger Manifests' :
-             activeTab === 'vehicle-dashboard' ? 'Step 6: Live GPS Tracking Console' :
-             activeTab === 'support-desk' ? 'Step 7: Compliance Support Desk' :
+             activeTab === 'support-desk' ? 'Step 6: Compliance Support Desk' :
              (activeTab as string).replace('-', ' ')}
           </h1>
         </div>
@@ -1175,8 +1154,8 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
 
             </div>
 
-            {/* Third Row: Recent Bookings Table & Live Vehicles Map */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '24px' }} className="responsive-grid-2">
+            {/* Third Row: Recent Bookings Table */}
+            <div style={{ width: '100%' }}>
               
               {/* Recent Bookings Table Card */}
               <div className="glass-panel" style={{ padding: '24px', overflowX: 'auto' }}>
@@ -1238,26 +1217,6 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
                     )}
                   </tbody>
                 </table>
-              </div>
-
-              {/* Live Vehicles map card */}
-              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 600 }}>Live Vehicles</h3>
-                  <span onClick={() => { setActiveTab('vehicle-dashboard'); setSelectedVehicleForDashboard(stats.vehicles[0] || null); }} style={{ color: 'var(--accent-primary)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>
-                    View All
-                  </span>
-                </div>
-                
-                <div style={{ height: '220px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-color)' }}>
-                  <iframe 
-                    title="Live Location Map Overview"
-                    width="100%" 
-                    height="100%" 
-                    style={{ border: 0 }}
-                    src="https://maps.google.com/maps?q=Shillong&z=10&output=embed"
-                  />
-                </div>
               </div>
 
             </div>
@@ -1524,7 +1483,21 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
               {manifestLoading ? (
                 <div>Loading passengers...</div>
               ) : manifestBookings.length > 0 ? (
-                <div style={{ overflowX: 'auto' }}>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+                    <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-main)', fontWeight: 600 }}>Passenger Details</h4>
+                    <button 
+                      onClick={() => {
+                        setIsScanningQR(true);
+                        setScannedBooking(null);
+                      }}
+                      className="btn btn-secondary btn-inline"
+                      style={{ padding: '6px 12px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px', margin: 0, width: 'auto' }}
+                    >
+                      📸 Boarding Lens Scanner
+                    </button>
+                  </div>
+                  <div style={{ overflowX: 'auto' }}>
                   <table className="responsive-table">
                     <thead>
                       <tr style={{ borderBottom: '2px solid var(--border-color)', color: 'var(--text-muted)' }}>
@@ -1584,6 +1557,174 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
                     </tbody>
                   </table>
                 </div>
+
+                {/* QR Scanner Modal Overlay */}
+                {isScanningQR && (
+                  <div className="modal-overlay open" style={{ zIndex: 1200, background: 'rgba(5, 7, 12, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', inset: 0 }}>
+                    <div className="glass-panel modal-card" style={{ maxWidth: '450px', width: '100%', padding: '24px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '20px', boxShadow: 'var(--shadow-xl)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      
+                      {/* Modal Header */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                        <h3 className="gradient-text" style={{ fontSize: '1.25rem', margin: 0 }}>🎫 Boarding Lens Scanner</h3>
+                        <button 
+                          onClick={() => {
+                            setIsScanningQR(false);
+                            // Stop camera if active
+                            const videoEl = document.getElementById('scanner-video') as HTMLVideoElement;
+                            if (videoEl && videoEl.srcObject) {
+                              const stream = videoEl.srcObject as MediaStream;
+                              stream.getTracks().forEach(track => track.stop());
+                            }
+                          }}
+                          style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: 'var(--text-muted)' }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+
+                      {/* Camera Viewport / Scanning Lens */}
+                      <div style={{ position: 'relative', width: '100%', height: '220px', background: '#000000', borderRadius: '12px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        
+                        {/* Real Video Feed or Mock Viewport */}
+                        <video 
+                          id="scanner-video"
+                          autoPlay 
+                          playsInline 
+                          muted 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+
+                        {/* Pulsing targeting scan square */}
+                        <div style={{
+                          position: 'absolute',
+                          width: '160px',
+                          height: '160px',
+                          border: '2px solid var(--accent-primary)',
+                          borderRadius: '12px',
+                          boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
+                          zIndex: 5,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          {/* Laser scanning bar */}
+                          <div className="scanner-laser" style={{
+                            position: 'absolute',
+                            width: '100%',
+                            height: '2px',
+                            background: '#10b981',
+                            boxShadow: '0 0 10px #10b981',
+                            top: '0',
+                            animation: 'scanLaser 2s linear infinite'
+                          }} />
+                        </div>
+
+                        {/* Overlay instructions */}
+                        <div style={{ position: 'absolute', bottom: '12px', left: '0', right: '0', textAlign: 'center', zIndex: 10, fontSize: '0.75rem', color: '#ffffff', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+                          Align Ticket QR Code inside the frame
+                        </div>
+                      </div>
+
+                      {/* Camera Activator */}
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                          onClick={async () => {
+                            try {
+                              const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                              const videoEl = document.getElementById('scanner-video') as HTMLVideoElement;
+                              if (videoEl) {
+                                videoEl.srcObject = stream;
+                              }
+                            } catch (err) {
+                              console.error("Camera access failed", err);
+                              alert("Unable to open device camera. Using mock simulator view.");
+                            }
+                          }}
+                          className="btn btn-secondary"
+                          style={{ padding: '8px 16px', fontSize: '0.85rem', flex: 1, minHeight: '44px' }}
+                        >
+                          📷 Open Device Camera
+                        </button>
+                      </div>
+
+                      {/* Simulator Scan Triggers */}
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Demo Simulator (Select passenger to scan their QR):</label>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '6px', maxHeight: '100px', overflowY: 'auto' }}>
+                          {manifestBookings.map((b) => (
+                            <button
+                              key={b.id}
+                              onClick={() => setScannedBooking(b)}
+                              className="btn btn-secondary btn-inline"
+                              style={{ padding: '4px 8px', fontSize: '0.7rem', margin: 0, background: scannedBooking?.id === b.id ? 'var(--accent-glow)' : 'var(--bg-tertiary)', borderColor: scannedBooking?.id === b.id ? 'var(--accent-primary)' : 'var(--border-color)', minHeight: 'auto' }}
+                            >
+                              Seat {b.seat_number}: {b.passenger_name} ({b.booking_ref})
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Scanner Result Card */}
+                      {scannedBooking ? (
+                        <div className="glass-panel animate-fade-in" style={{ padding: '16px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <span style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--accent-primary)' }}>TICKET DETECTED</span>
+                            <span className="status-pill approved" style={{ fontSize: '0.65rem', padding: '2px 8px', textTransform: 'uppercase' }}>
+                              {scannedBooking.status}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <div>Name: <strong>{scannedBooking.passenger_name}</strong></div>
+                            <div>Phone: {scannedBooking.passenger_phone}</div>
+                            <div>Seat: <strong>{scannedBooking.seat_number}</strong></div>
+                            <div>PNR: <code>{scannedBooking.booking_ref}</code></div>
+                          </div>
+                          
+                          <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
+                            {scannedBooking.status === 'pending' && (
+                              <button 
+                                onClick={async () => {
+                                  await handleStatusUpdate(scannedBooking.id, 'approved');
+                                  setScannedBooking({ ...scannedBooking, status: 'approved' });
+                                  alert('Ticket approved successfully!');
+                                }}
+                                className="btn btn-primary"
+                                style={{ flex: 1, padding: '8px 0', fontSize: '0.8rem', margin: 0, minHeight: '44px' }}
+                              >
+                                ✓ Approve Ticket
+                              </button>
+                            )}
+                            {(scannedBooking.status === 'approved' || scannedBooking.status === 'paid') && (
+                              <button 
+                                onClick={async () => {
+                                  await handleStatusUpdate(scannedBooking.id, 'completed');
+                                  setScannedBooking({ ...scannedBooking, status: 'completed' });
+                                  alert('Check-in completed successfully!');
+                                }}
+                                className="btn btn-primary"
+                                style={{ flex: 1, padding: '8px 0', fontSize: '0.8rem', margin: 0, background: '#059669', minHeight: '44px' }}
+                              >
+                                ✓ Check-In Boarding
+                              </button>
+                            )}
+                            {scannedBooking.status === 'completed' && (
+                              <div style={{ color: '#10b981', fontWeight: 600, fontSize: '0.85rem', textAlign: 'center', width: '100%', padding: '6px' }}>
+                                ✓ Passenger Checked In & Boarded
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center', padding: '10px 0' }}>
+                          No ticket QR scanned yet. Use camera or click simulation buttons above.
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+                )}
+
+              </div>
               ) : (
                 <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0' }}>No seats reserved yet for this trip.</div>
               )}
@@ -2150,16 +2291,7 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
                       </div>
                     </div>
 
-                    <button 
-                      onClick={() => {
-                        setSelectedVehicleForDashboard(vehicle);
-                        setActiveTab('vehicle-dashboard');
-                      }}
-                      className="btn btn-secondary" 
-                      style={{ width: '100%', padding: '8px 0', fontSize: '0.8rem', borderRadius: '8px' }}
-                    >
-                      Console & Tracking →
-                    </button>
+
                   </div>
                 ))}
               </div>
@@ -2168,345 +2300,6 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
         </div>
       )}
 
-      {activeTab === 'vehicle-dashboard' && (() => {
-        if (!selectedVehicleForDashboard) {
-          return (
-            <div className="glass-panel" style={{ padding: '30px' }}>
-              <h3 className="gradient-text" style={{ fontSize: '1.5rem', marginBottom: '10px' }}>Step 6: Live GPS Tracking Console</h3>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '24px' }}>
-                Select one of your registered vehicles below to open its real-time GPS tracking simulator and console, monitor current speeds, map coordinates, and report delay statuses.
-              </p>
-
-              {stats.vehicles.length === 0 ? (
-                <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0', border: '1px dashed var(--border-color)', borderRadius: '12px' }}>
-                  No vehicles registered yet. Please register your fleet in <strong>Step 2</strong>.
-                </div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-                  {stats.vehicles.map((vehicle: any) => (
-                    <div 
-                      key={vehicle.id} 
-                      style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
-                      className="hover-lift"
-                    >
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                          <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px', background: 'var(--bg-tertiary)', color: 'var(--accent-primary)', textTransform: 'uppercase', fontWeight: 600 }}>
-                            {vehicle.vehicle_type}
-                          </span>
-                          <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 600, background: vehicle.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)', color: vehicle.is_active ? '#34d399' : 'var(--text-muted)' }}>
-                            {vehicle.is_active ? 'ONLINE' : 'OFFLINE'}
-                          </span>
-                        </div>
-                        <h4 style={{ fontSize: '1.1rem', marginBottom: '4px', color: 'var(--text-main)' }}>{vehicle.name}</h4>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '12px' }}>Plate: <strong>{vehicle.vehicle_number}</strong></p>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px', marginBottom: '16px' }}>
-                          <div>👤 <strong>Driver:</strong> {vehicle.driver_name}</div>
-                          <div>📞 <strong>Contact:</strong> {vehicle.driver_contact}</div>
-                        </div>
-                      </div>
-                      <button 
-                        onClick={() => setSelectedVehicleForDashboard(vehicle)}
-                        className="btn btn-primary"
-                        style={{ width: '100%', padding: '8px 0', fontSize: '0.8rem', borderRadius: '8px', margin: 0 }}
-                      >
-                        🛰️ Open Console & Track
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        }
-
-        // Find active trip details for this vehicle from stats
-        const activeTrip = stats.trips.find(t => t.vehicle_details?.vehicle_number === selectedVehicleForDashboard.vehicle_number);
-        const source = activeTrip?.route_details?.source || "Guwahati";
-        const destination = activeTrip?.route_details?.destination || "Shillong";
-        
-        // Calculate ETA string
-        const departureTime = activeTrip ? new Date(activeTrip.card_date + ' ' + activeTrip.card_time) : new Date();
-        const etaTime = new Date(departureTime.getTime() + (120 + delayMinutes) * 60 * 1000);
-        const etaStr = etaTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-
-        return (
-          <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px 24px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-              <div>
-                <span 
-                  onClick={() => {
-                    // Stop simulations on back
-                    if (vehicleSimulating) {
-                      clearInterval(vehicleSimInterval);
-                      setVehicleSimulating(false);
-                    }
-                    setSelectedVehicleForDashboard(null);
-                  }} 
-                  style={{ cursor: 'pointer', color: 'var(--accent-primary)', fontSize: '0.85rem', fontWeight: 500, display: 'inline-block', marginBottom: '4px' }}
-                >
-                  ← Back to Selection
-                </span>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>
-                  {selectedVehicleForDashboard.name} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 400 }}>({selectedVehicleForDashboard.vehicle_number})</span>
-                </h2>
-              </div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Device Status:</span>
-                <button 
-                  onClick={async () => {
-                    const newActiveState = !selectedVehicleForDashboard.is_active;
-                    try {
-                      setSelectedVehicleForDashboard({
-                        ...selectedVehicleForDashboard,
-                        is_active: newActiveState
-                      });
-                      
-                      if (stats) {
-                        const updatedVehicles = stats.vehicles.map((v: any) => 
-                          v.id === selectedVehicleForDashboard.id ? { ...v, is_active: newActiveState } : v
-                        );
-                        setStats({ ...stats, vehicles: updatedVehicles });
-                      }
-                    } catch (err) {
-                      console.error(err);
-                    }
-                  }}
-                  className="btn btn-secondary btn-inline" 
-                  style={{ 
-                    padding: '6px 12px', 
-                    fontSize: '0.75rem', 
-                    background: selectedVehicleForDashboard.is_active ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', 
-                    color: selectedVehicleForDashboard.is_active ? '#34d399' : '#f87171',
-                    borderColor: selectedVehicleForDashboard.is_active ? '#10b981' : '#ef4444',
-                    margin: 0
-                  }}
-                >
-                  {selectedVehicleForDashboard.is_active ? '🟢 ONLINE' : '🔴 OFFLINE'}
-                </button>
-              </div>
-            </div>
-
-            {/* Reusable map representation */}
-            <LiveTrackingVisual 
-              vehicleName={selectedVehicleForDashboard.name}
-              vehicleNumber={selectedVehicleForDashboard.vehicle_number}
-              vehicleType={selectedVehicleForDashboard.vehicle_type}
-              vehiclePhoto={selectedVehicleForDashboard.vehicle_photo_url ? `${api.defaults.baseURL?.replace('/api/transport/', '')}${selectedVehicleForDashboard.vehicle_photo_url}` : null}
-              source={source}
-              destination={destination}
-              driverName={selectedVehicleForDashboard.driver_name}
-              driverContact={selectedVehicleForDashboard.driver_contact}
-              speed={vehicleSimulating ? vehicleSimSpeed : 0}
-              nextStopName={vehicleSimulating ? "Nongpoh" : (activeTrip ? "Approaching Stop #1" : "Umiam Lake")}
-              nextStopDistance={vehicleSimulating ? "15 km away" : "Calculating..."}
-              eta={etaStr}
-              distanceCovered={vehicleSimulating ? "120 km" : "0 km"}
-              totalDistance="180 km"
-              statusText={delayMinutes > 0 ? `+${delayMinutes}m delay` : "On Time"}
-              statusColor={delayMinutes > 0 ? "#ef4444" : "#10b981"}
-              latitude={vehicleSimulating ? vehicleSimLat : 26.1445}
-              longitude={vehicleSimulating ? vehicleSimLng : 91.7362}
-            />
-
-            {/* Grid Control Board */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-              
-              {/* Left: GPS Simulation */}
-              <div className="glass-panel" style={{ padding: '24px' }}>
-                <h3 style={{ fontSize: '1.15rem', marginBottom: '16px', fontWeight: 600, color: 'var(--accent-primary)' }}>📍 Live GPS & Tracking Simulator</h3>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div>🛰️ <strong>GPS Signal:</strong> {selectedVehicleForDashboard.is_active ? 'CONNECTED' : 'DISCONNECTED'}</div>
-                    <div>🌐 <strong>Latitude:</strong> {vehicleSimulating ? vehicleSimLat.toFixed(6) : '26.144500'}</div>
-                    <div>🌐 <strong>Longitude:</strong> {vehicleSimulating ? vehicleSimLng.toFixed(6) : '91.736200'}</div>
-                    <div>⚡ <strong>Current Speed:</strong> {vehicleSimulating ? vehicleSimSpeed : '0'} km/h</div>
-                    <div>🛣️ <strong>Current Segment:</strong> {source} ➔ {destination}</div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    {!vehicleSimulating ? (
-                      <button 
-                        onClick={() => {
-                          if (!selectedVehicleForDashboard.is_active) {
-                            alert('Please toggle the vehicle device status to ONLINE first.');
-                            return;
-                          }
-                          setVehicleSimulating(true);
-                          setVehicleSimSpeed(45);
-                          const interval = setInterval(() => {
-                            setVehicleSimLat(prev => prev + (Math.random() - 0.5) * 0.001);
-                            setVehicleSimLng(prev => prev + (Math.random() - 0.5) * 0.001);
-                            setVehicleSimSpeed(() => Math.round(40 + Math.random() * 25));
-                          }, 3000);
-                          setVehicleSimInterval(interval);
-                        }}
-                        className="btn btn-primary" 
-                        style={{ flex: 1, padding: '10px', fontSize: '0.8rem', margin: 0 }}
-                      >
-                        🚀 Start Route Tracking
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={() => {
-                          clearInterval(vehicleSimInterval);
-                          setVehicleSimulating(false);
-                          setVehicleSimSpeed(0);
-                        }}
-                        className="btn btn-secondary" 
-                        style={{ flex: 1, padding: '10px', fontSize: '0.8rem', margin: 0, borderColor: '#ef4444', color: '#f87171' }}
-                      >
-                        ⏹️ Stop Tracking
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Delay Control */}
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Trip Delay Manager</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Notify passengers in real-time</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button 
-                        onClick={() => setDelayMinutes(p => Math.max(0, p - 5))} 
-                        className="btn btn-secondary" 
-                        style={{ padding: '4px 10px', margin: 0, fontSize: '0.8rem' }}
-                      >
-                        -
-                      </button>
-                      <span style={{ fontSize: '0.9rem', fontWeight: 'bold', minWidth: '40px', textAlign: 'center', color: delayMinutes > 0 ? '#fbbf24' : 'var(--text-main)' }}>
-                        {delayMinutes}m
-                      </span>
-                      <button 
-                        onClick={() => setDelayMinutes(p => p + 5)} 
-                        className="btn btn-secondary" 
-                        style={{ padding: '4px 10px', margin: 0, fontSize: '0.8rem' }}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right: Passenger Manifest List */}
-              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ fontSize: '1.15rem', marginBottom: '16px', fontWeight: 600, color: 'var(--accent-secondary)' }}>👥 Passenger Manifest</h3>
-                
-                <div style={{ overflowX: 'auto', flex: 1 }}>
-                  <table className="responsive-table" style={{ fontSize: '0.8rem', width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                        <th style={{ padding: '8px 4px' }}>Name</th>
-                        <th style={{ padding: '8px 4px' }}>Seat</th>
-                        <th style={{ padding: '8px 4px' }}>Route</th>
-                        <th style={{ padding: '8px 4px' }}>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {activeTrip ? (
-                        stats.recent_bookings.filter(b => b.trip_details.full_route === activeTrip.full_route).map((booking: any) => (
-                          <tr key={booking.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                            <td style={{ padding: '8px 4px' }}><strong>{booking.passenger_name}</strong><br/><span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{booking.passenger_phone}</span></td>
-                            <td style={{ padding: '8px 4px' }}>Seat {booking.seat_number}</td>
-                            <td style={{ padding: '8px 4px' }}>{booking.trip_details.full_route}</td>
-                            <td style={{ padding: '8px 4px', color: ['approved', 'paid', 'completed'].includes(booking.status) ? '#34d399' : '#fbbf24' }}>{booking.status.toUpperCase()}</td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                          <td style={{ padding: '8px 4px' }}><strong>Kashyap Abhijeet</strong><br/><span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>+91 98765 43210</span></td>
-                          <td style={{ padding: '8px 4px' }}>Seat 3</td>
-                          <td style={{ padding: '8px 4px' }}>Guwahati ➔ Shillong</td>
-                          <td style={{ padding: '8px 4px', color: '#34d399' }}>PAID</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Grid: Analytics & Documents */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
-              {/* Analytics */}
-              <div className="glass-panel" style={{ padding: '24px' }}>
-                <h3 style={{ fontSize: '1.15rem', marginBottom: '16px', fontWeight: 600 }}>📊 Performance Analytics</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                  <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>On-Time Rate</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#34d399' }}>98.2%</div>
-                  </div>
-                  <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Operator Rating</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#fbbf24' }}>★ 4.90</div>
-                  </div>
-                  <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Trips Completed</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>42</div>
-                  </div>
-                  <div style={{ background: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', textAlign: 'center' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>Daily Earnings</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#34d399' }}>₹3,450</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Documents */}
-              <div className="glass-panel" style={{ padding: '24px' }}>
-                <h3 style={{ fontSize: '1.15rem', marginBottom: '16px', fontWeight: 600 }}>📄 Vehicle Registration Documents</h3>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                    <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Registration Certificate (RC)</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Uploaded on vehicle creation</div>
-                    </div>
-                    {selectedVehicleForDashboard.rc_url ? (
-                      <a 
-                        href={`${api.defaults.baseURL?.replace('/api/transport/', '')}${selectedVehicleForDashboard.rc_url}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="btn btn-secondary btn-inline" 
-                        style={{ padding: '6px 12px', fontSize: '0.75rem', margin: 0 }}
-                      >
-                        View RC File
-                      </a>
-                    ) : (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No document</span>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                    <div>
-                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Vehicle Photo</div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Exterior vehicle verification</div>
-                    </div>
-                    {selectedVehicleForDashboard.vehicle_photo_url ? (
-                      <a 
-                        href={`${api.defaults.baseURL?.replace('/api/transport/', '')}${selectedVehicleForDashboard.vehicle_photo_url}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="btn btn-secondary btn-inline" 
-                        style={{ padding: '6px 12px', fontSize: '0.75rem', margin: 0 }}
-                      >
-                        View Photo
-                      </a>
-                    ) : (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>No photo</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        );
-      })()}
 
       {activeTab === 'edit-profile' && (
         <div className="glass-panel" style={{ padding: '30px', maxWidth: '600px', margin: '0 auto' }}>
@@ -2579,7 +2372,7 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
               Welcome to the NE Explore Support Desk. Access self-help resources, book an onboarding agent, or chat with our automated assistant.
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '24px' }} className="responsive-grid-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '750px', margin: '0 auto' }}>
               {/* Help Center FAQs */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <h4 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '8px' }}>Frequently Asked Questions</h4>
@@ -2649,232 +2442,11 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
                   </form>
                 </div>
               </div>
-
-              {/* Chat Support Interface */}
-              <div className="glass-panel" style={{ padding: '16px', height: '450px', display: 'flex', flexDirection: 'column', background: 'rgba(16, 24, 40, 0.92)' }}>
-                <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '8px', marginBottom: '12px' }}>
-                  <strong style={{ fontSize: '0.9rem' }}>Chat Support Assistant</strong>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Automated assistant for quick compliance queries</div>
-                </div>
-                
-                {/* Chat Message History */}
-                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '4px', marginBottom: '12px' }}>
-                  {supportMessages.map((m, i) => (
-                    <div key={i} style={{
-                      alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start',
-                      background: m.sender === 'user' ? 'var(--accent-primary)' : 'rgba(255,255,255,0.06)',
-                      color: '#ffffff',
-                      padding: '8px 12px',
-                      borderRadius: '10px',
-                      fontSize: '0.8rem',
-                      maxWidth: '85%'
-                    }}>
-                      {m.text}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Chat Input form */}
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!supportInput.trim()) return;
-                  const text = supportInput;
-                  setSupportInput('');
-                  setSupportMessages(prev => [...prev, { sender: 'user', text }]);
-                  setTimeout(() => {
-                    setSupportMessages(prev => [...prev, {
-                      sender: 'bot',
-                      text: `Thank you. A support representative has received your request: "${text}". We will assist you shortly.`
-                    }]);
-                  }, 800);
-                }} style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="text"
-                    value={supportInput}
-                    onChange={(e) => setSupportInput(e.target.value)}
-                    placeholder="Type a message..."
-                    style={{ flex: 1, padding: '8px 12px', fontSize: '0.85rem' }}
-                  />
-                  <button type="submit" className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-                    Send
-                  </button>
-                </form>
-              </div>
             </div>
           </div>
         </div>
       )}
-      {/* Floating Support Chat Widget */}
-      <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 1000, fontFamily: 'var(--font-main, sans-serif)' }}>
-        {!supportWidgetOpen ? (
-          <button 
-            onClick={() => setSupportWidgetOpen(true)}
-            style={{ 
-              background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)', 
-              color: '#ffffff', 
-              border: 'none', 
-              borderRadius: '50px', 
-              padding: '12px 24px', 
-              fontSize: '0.9rem', 
-              fontWeight: 600, 
-              cursor: 'pointer', 
-              boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px', 
-              transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-            }}
-            className="hover-lift"
-          >
-            <span>💬 Need Help?</span>
-          </button>
-        ) : (
-          <div 
-            className="glass-panel animate-fade-in" 
-            style={{ 
-              width: '350px', 
-              height: '450px', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)', 
-              borderRadius: '16px', 
-              border: '1px solid var(--border-color)', 
-              overflow: 'hidden', 
-              background: 'rgba(16, 24, 40, 0.92)',
-              backdropFilter: 'blur(20px)'
-            }}
-          >
-            {/* Header */}
-            <div style={{ background: 'linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%)', padding: '16px', color: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>Operator Support Agent</div>
-                <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>Active • Setup Assistance</div>
-              </div>
-              <button 
-                onClick={() => setSupportWidgetOpen(false)}
-                style={{ background: 'none', border: 'none', color: '#ffffff', fontSize: '1.2rem', cursor: 'pointer', padding: 0 }}
-              >
-                ✕
-              </button>
-            </div>
 
-            {/* Chat Messages */}
-            <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {supportMessages.map((m, i) => (
-                <div 
-                  key={i} 
-                  style={{ 
-                    alignSelf: m.sender === 'user' ? 'flex-end' : 'flex-start',
-                    background: m.sender === 'user' ? 'var(--accent-primary)' : 'rgba(255,255,255,0.06)',
-                    color: '#ffffff',
-                    padding: '10px 14px',
-                    borderRadius: m.sender === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                    fontSize: '0.825rem',
-                    maxWidth: '80%',
-                    lineHeight: '1.4',
-                    wordBreak: 'break-word'
-                  }}
-                >
-                  {m.text}
-                </div>
-              ))}
-            </div>
-
-            {/* Quick Actions Bar */}
-            <div style={{ padding: '8px 12px', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', gap: '6px', flexWrap: 'wrap', background: 'rgba(0,0,0,0.15)' }}>
-              <button 
-                onClick={() => {
-                  const msgs = [...supportMessages, { sender: 'user' as const, text: 'Book an Agent' }];
-                  setSupportMessages(msgs);
-                  setTimeout(() => {
-                    setSupportMessages(prev => [...prev, {
-                      sender: 'bot',
-                      text: 'I have requested an onboarding assistant to call you. An expert will reach out to you at ' + (stats?.operator_profile?.phone || 'your phone number') + ' within 15 minutes.'
-                    }]);
-                  }, 800);
-                }}
-                className="btn btn-secondary btn-inline" 
-                style={{ padding: '4px 8px', fontSize: '0.7rem', margin: 0, borderRadius: '4px' }}
-              >
-                📞 Book an Agent
-              </button>
-              <button 
-                onClick={() => {
-                  const msgs = [...supportMessages, { sender: 'user' as const, text: 'Help Center' }];
-                  setSupportMessages(msgs);
-                  setTimeout(() => {
-                    setSupportMessages(prev => [...prev, {
-                      sender: 'bot',
-                      text: 'To register vehicles, use the "Fleet Entry" tab to upload your RC and vehicle photo. Once submitted, compliance reviews typically take 1-2 hours.'
-                    }]);
-                  }, 800);
-                }}
-                className="btn btn-secondary btn-inline" 
-                style={{ padding: '4px 8px', fontSize: '0.7rem', margin: 0, borderRadius: '4px' }}
-              >
-                ❓ Help Center
-              </button>
-              <button 
-                onClick={() => {
-                  const msgs = [...supportMessages, { sender: 'user' as const, text: 'Chat Support' }];
-                  setSupportMessages(msgs);
-                  setTimeout(() => {
-                    setSupportMessages(prev => [...prev, {
-                      sender: 'bot',
-                      text: 'Chat Support is active. Type your query in the field below and our automated compliance assistant will guide you.'
-                    }]);
-                  }, 800);
-                }}
-                className="btn btn-secondary btn-inline" 
-                style={{ padding: '4px 8px', fontSize: '0.7rem', margin: 0, borderRadius: '4px' }}
-              >
-                💬 Chat Support
-              </button>
-            </div>
-
-            {/* Input Form */}
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!supportInput.trim()) return;
-                const userText = supportInput;
-                setSupportInput('');
-                const msgs = [...supportMessages, { sender: 'user' as const, text: userText }];
-                setSupportMessages(msgs);
-                
-                setTimeout(() => {
-                  let reply = 'Thank you for reaching out! A support agent has been notified of your query: "' + userText + '". We will call you shortly.';
-                  const lower = userText.toLowerCase();
-                  if (lower.includes('book') || lower.includes('agent') || lower.includes('onboard')) {
-                    reply = 'I\'ve scheduled an onboarding agent to contact you shortly. Please make sure your phone number is correct in Profile Settings.';
-                  } else if (lower.includes('verif') || lower.includes('document') || lower.includes('status')) {
-                    reply = 'You can check document status in the Fleet Dashboard. Admin review is pending compliance check.';
-                  } else if (lower.includes('faq') || lower.includes('help')) {
-                    reply = 'FAQs:\n- Fleet Entry: Add vehicles dynamically.\n- GPS Tracking: Toggle vehicle Online, click Console, then click Start GPS Simulation.';
-                  }
-                  setSupportMessages(prev => [...prev, { sender: 'bot', text: reply }]);
-                }, 800);
-              }}
-              style={{ padding: '12px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '8px' }}
-            >
-              <input 
-                type="text" 
-                placeholder="Type your message..." 
-                value={supportInput} 
-                onChange={(e) => setSupportInput(e.target.value)}
-                style={{ flex: 1, padding: '8px 12px', fontSize: '0.825rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.2)', color: '#ffffff' }}
-              />
-              <button 
-                type="submit" 
-                className="btn btn-primary btn-inline" 
-                style={{ padding: '8px 16px', fontSize: '0.8rem', margin: 0, borderRadius: '8px' }}
-              >
-                Send
-              </button>
-            </form>
-          </div>
-        )}
-      </div>
 
     </div>
   );
