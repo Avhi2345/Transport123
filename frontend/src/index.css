@@ -1277,10 +1277,11 @@ header {
 
 @media (max-width: 768px) {
   .responsive-flex-header {
-    flex-direction: column;
-    align-items: stretch;
-    text-align: center;
-    gap: 16px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+    gap: 12px;
   }
   
   .search-form-grid {
@@ -1802,6 +1803,9 @@ div[style*="background: rgba(255, 255, 255, 0.02)"] {
   .responsive-grid-5 > :first-child {
     grid-column: span 1 !important;
   }
+  .dashboard-user-profile-badge .user-meta {
+    display: none !important;
+  }
 }
 
 /* Operator Console Mobile Sidebar drawer & backdrop */
@@ -1878,15 +1882,6 @@ div[style*="background: rgba(255, 255, 255, 0.02)"] {
   .operator-sidebar-backdrop.open {
     opacity: 1;
     visibility: visible;
-  }
-
-  .mobile-sidebar-toggle {
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-    background: var(--bg-secondary) !important;
-    border: 1px solid var(--border-color) !important;
-    box-shadow: var(--shadow-sm);
   }
 
   .app-header {

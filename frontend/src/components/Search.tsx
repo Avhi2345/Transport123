@@ -115,7 +115,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectTrip, onGoToDashboard, i
             </p>
           </div>
 
-          <div className="glass-panel search-card-floating" style={{ padding: '30px', background: '#ffffff', border: 'none', boxShadow: 'var(--shadow-xl)' }}>
+          <div className="glass-panel search-card-floating" style={{ padding: '30px', background: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.4)', boxShadow: '0 20px 40px rgba(11, 31, 68, 0.1)' }}>
             <form onSubmit={handleSearch} className="search-form-grid">
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label style={{ color: 'var(--text-muted)' }}>From</label>
@@ -233,7 +233,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectTrip, onGoToDashboard, i
             </button>
           </div>
 
-          <div className="glass-panel" style={{ padding: '30px', marginBottom: '40px', background: '#ffffff' }}>
+          <div className="glass-panel" style={{ padding: '30px', marginBottom: '40px', background: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(255, 255, 255, 0.4)', boxShadow: '0 20px 40px rgba(11, 31, 68, 0.1)' }}>
             <form onSubmit={handleSearch} className="search-form-grid">
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label>From</label>

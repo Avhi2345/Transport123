@@ -847,24 +847,7 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
       </div>
 
       {/* Main Console Content Header */}
-      <div className="responsive-flex-header" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <button 
-          onClick={() => setIsMobileSidebarOpen(true)}
-          className="mobile-sidebar-toggle btn btn-secondary btn-inline"
-          style={{
-            padding: '8px 12px',
-            fontSize: '1.25rem',
-            margin: 0,
-            cursor: 'pointer',
-            borderRadius: '8px',
-            display: 'none', // Overridden in media query
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-          aria-label="Open sidebar menu"
-        >
-          ☰
-        </button>
+      <div className="responsive-flex-header" style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '16px', justifyContent: 'space-between', width: '100%' }}>
         <div>
           <h1 className="gradient-text" style={{ fontSize: '2rem', marginBottom: '4px', textTransform: 'capitalize', margin: 0 }}>
             {activeTab === 'overview' ? 'Dashboard' : 
