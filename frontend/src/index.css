@@ -1324,12 +1324,19 @@ header {
     bottom: 0;
     left: 0;
     right: 0;
-    background: #ffffff;
-    border-top: 2px solid var(--accent-primary);
-    padding: 16px 20px;
+    background: rgba(255, 255, 255, 0.94) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+    border-radius: 24px 24px 0 0 !important;
+    padding: 16px 20px 24px 20px;
     margin-top: 0;
-    z-index: 90;
-    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.05);
+    z-index: 990;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.08);
+  }
+  
+  .booking-checkout-container .mobile-grab-handle {
+    display: block !important;
   }
   
   .booking-checkout-container .summary-row {
@@ -1933,5 +1940,71 @@ div[style*="background: rgba(255, 255, 255, 0.02)"] {
 
 .scanner-laser {
   animation: scanLaser 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
+}
+
+/* Mobile Bottom Tab Bar */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 20px !important;
+    left: 20px !important;
+    right: 20px !important;
+    height: 72px !important;
+    background: rgba(11, 31, 68, 0.94) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4) !important;
+    z-index: 999 !important;
+    justify-content: space-around !important;
+    align-items: center !important;
+    padding: 0 10px !important;
+  }
+
+  .mobile-bottom-nav-item {
+    background: none !important;
+    border: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: rgba(255, 255, 255, 0.55) !important;
+    font-size: 0.7rem !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    flex: 1 !important;
+    height: 100% !important;
+    gap: 5px !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .mobile-bottom-nav-item .nav-icon {
+    font-size: 1.35rem !important;
+    transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  }
+
+  .mobile-bottom-nav-item.active {
+    color: #ffffff !important;
+  }
+
+  .mobile-bottom-nav-item.active .nav-icon {
+    transform: translateY(-4px) scale(1.15) !important;
+    filter: drop-shadow(0 4px 8px rgba(37, 99, 235, 0.5)) !important;
+  }
+
+  .mobile-bottom-nav-item.active .nav-label {
+    font-weight: 600 !important;
+    color: #ffffff !important;
+  }
+
+  .operator-dashboard-layout {
+    padding-bottom: 110px !important;
+  }
 }
 

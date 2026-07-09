@@ -246,6 +246,7 @@ export const Booking: React.FC<BookingProps> = ({ trip, onBookingSuccess, onBack
             </div>
 
             <div className="booking-checkout-container">
+              <div style={{ width: '40px', height: '4px', background: 'var(--border-color)', borderRadius: '2px', margin: '0 auto 12px auto', display: 'none' }} className="mobile-grab-handle" />
               <div className="summary-row" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '1.1rem' }}>
                 <span>Selected Seats</span>
                 <strong>{selectedSeats.join(', ')}</strong>

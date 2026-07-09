@@ -119,52 +119,64 @@ export const Search: React.FC<SearchProps> = ({ onSelectTrip, onGoToDashboard, i
             <form onSubmit={handleSearch} className="search-form-grid">
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label style={{ color: 'var(--text-muted)' }}>From</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={source} 
-                  onChange={(e) => setSource(e.target.value)} 
-                  placeholder="e.g. Guwahati"
-                  style={{ background: '#f8fafc' }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem', zIndex: 5 }}>📍</span>
+                  <input 
+                    type="text" 
+                    required 
+                    value={source} 
+                    onChange={(e) => setSource(e.target.value)} 
+                    placeholder="Departure City"
+                    style={{ background: '#f8fafc', paddingLeft: '44px' }}
+                  />
+                </div>
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label style={{ color: 'var(--text-muted)' }}>To</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={destination} 
-                  onChange={(e) => setDestination(e.target.value)} 
-                  placeholder="e.g. Shillong"
-                  style={{ background: '#f8fafc' }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem', zIndex: 5 }}>🏁</span>
+                  <input 
+                    type="text" 
+                    required 
+                    value={destination} 
+                    onChange={(e) => setDestination(e.target.value)} 
+                    placeholder="Destination City"
+                    style={{ background: '#f8fafc', paddingLeft: '44px' }}
+                  />
+                </div>
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label style={{ color: 'var(--text-muted)' }}>Date (Optional)</label>
-                <input 
-                  type="date" 
-                  value={date} 
-                  min={getLocalDateString()}
-                  onChange={(e) => setDate(e.target.value)} 
-                  style={{ background: '#f8fafc' }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem', zIndex: 5 }}>📅</span>
+                  <input 
+                    type="date" 
+                    value={date} 
+                    min={getLocalDateString()}
+                    onChange={(e) => setDate(e.target.value)} 
+                    style={{ background: '#f8fafc', paddingLeft: '44px' }}
+                  />
+                </div>
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label style={{ color: 'var(--text-muted)' }}>Vehicle Type</label>
-                <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} style={{ background: '#f8fafc' }}>
-                  <option value="">Any Vehicle</option>
-                  <option value="sumo">Tata Sumo</option>
-                  <option value="traveller">Force Traveller</option>
-                  <option value="bus">Bus</option>
-                  <option value="taxi">Local Taxi</option>
-                </select>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem', zIndex: 5 }}>🚌</span>
+                  <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} style={{ background: '#f8fafc', paddingLeft: '44px' }}>
+                    <option value="">Any Vehicle</option>
+                    <option value="sumo">Tata Sumo</option>
+                    <option value="traveller">Force Traveller</option>
+                    <option value="bus">Bus</option>
+                    <option value="taxi">Local Taxi</option>
+                  </select>
+                </div>
               </div>
 
-              <button type="submit" className="btn btn-primary" style={{ height: '48px' }}>
-                {loading ? 'Searching...' : 'Search'}
+              <button type="submit" className="btn btn-primary" style={{ height: '48px', marginTop: 'auto' }}>
+                {loading ? 'Searching...' : '🔍 Search Rides'}
               </button>
             </form>
           </div>
@@ -225,52 +237,64 @@ export const Search: React.FC<SearchProps> = ({ onSelectTrip, onGoToDashboard, i
             <form onSubmit={handleSearch} className="search-form-grid">
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label>From</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={source} 
-                  onChange={(e) => setSource(e.target.value)} 
-                  placeholder="e.g. Guwahati"
-                  style={{ background: '#f8fafc' }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem', zIndex: 5 }}>📍</span>
+                  <input 
+                    type="text" 
+                    required 
+                    value={source} 
+                    onChange={(e) => setSource(e.target.value)} 
+                    placeholder="Departure City"
+                    style={{ background: '#f8fafc', paddingLeft: '44px' }}
+                  />
+                </div>
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label>To</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={destination} 
-                  onChange={(e) => setDestination(e.target.value)} 
-                  placeholder="e.g. Shillong"
-                  style={{ background: '#f8fafc' }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem', zIndex: 5 }}>🏁</span>
+                  <input 
+                    type="text" 
+                    required 
+                    value={destination} 
+                    onChange={(e) => setDestination(e.target.value)} 
+                    placeholder="Destination City"
+                    style={{ background: '#f8fafc', paddingLeft: '44px' }}
+                  />
+                </div>
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label>Date (Optional)</label>
-                <input 
-                  type="date" 
-                  value={date} 
-                  min={getLocalDateString()}
-                  onChange={(e) => setDate(e.target.value)} 
-                  style={{ background: '#f8fafc' }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem', zIndex: 5 }}>📅</span>
+                  <input 
+                    type="date" 
+                    value={date} 
+                    min={getLocalDateString()}
+                    onChange={(e) => setDate(e.target.value)} 
+                    style={{ background: '#f8fafc', paddingLeft: '44px' }}
+                  />
+                </div>
               </div>
 
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label>Vehicle Type</label>
-                <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} style={{ background: '#f8fafc' }}>
-                  <option value="">Any Vehicle</option>
-                  <option value="sumo">Tata Sumo</option>
-                  <option value="traveller">Force Traveller</option>
-                  <option value="bus">Bus</option>
-                  <option value="taxi">Local Taxi</option>
-                </select>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.1rem', zIndex: 5 }}>🚌</span>
+                  <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} style={{ background: '#f8fafc', paddingLeft: '44px' }}>
+                    <option value="">Any Vehicle</option>
+                    <option value="sumo">Tata Sumo</option>
+                    <option value="traveller">Force Traveller</option>
+                    <option value="bus">Bus</option>
+                    <option value="taxi">Local Taxi</option>
+                  </select>
+                </div>
               </div>
 
-              <button type="submit" className="btn btn-primary" style={{ height: '48px' }}>
-                {loading ? 'Searching...' : 'Search'}
+              <button type="submit" className="btn btn-primary" style={{ height: '48px', marginTop: 'auto' }}>
+                {loading ? 'Searching...' : '🔍 Search'}
               </button>
             </form>
           </div>
@@ -351,8 +375,13 @@ export const Search: React.FC<SearchProps> = ({ onSelectTrip, onGoToDashboard, i
                     )}
                   </div>
                   <h3 style={{ fontSize: '1.25rem', marginBottom: '4px' }}>{trip.full_route}</h3>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-                    {trip.vehicle_details.name} • Depart: <strong>{trip.card_time}</strong> ({trip.card_date})
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '1.1rem' }}>
+                      {trip.vehicle_details.vehicle_type === 'bus' ? '🚌' : 
+                       trip.vehicle_details.vehicle_type === 'sumo' ? '🚙' : 
+                       trip.vehicle_details.vehicle_type === 'traveller' ? '🚐' : '🚕'}
+                    </span>
+                    <span>{trip.vehicle_details.name} • Depart: <strong>{trip.card_time}</strong> ({trip.card_date})</span>
                   </p>
                 </div>
 

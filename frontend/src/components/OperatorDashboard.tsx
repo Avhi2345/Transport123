@@ -2758,6 +2758,44 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
         </div>
       )}
 
+      {/* Premium Mobile Bottom Navigation Bar */}
+      <div className="mobile-bottom-nav">
+        <button 
+          onClick={() => { setActiveTab('overview'); if (typeof setManifestTrip === 'function') setManifestTrip(null); }} 
+          className={`mobile-bottom-nav-item ${activeTab === 'overview' ? 'active' : ''}`}
+        >
+          <span className="nav-icon">🎛️</span>
+          <span className="nav-label">Overview</span>
+        </button>
+        <button 
+          onClick={() => { setActiveTab('trips'); if (typeof setManifestTrip === 'function') setManifestTrip(null); }} 
+          className={`mobile-bottom-nav-item ${activeTab === 'trips' ? 'active' : ''}`}
+        >
+          <span className="nav-icon">📋</span>
+          <span className="nav-label">Trips</span>
+        </button>
+        <button 
+          onClick={() => { setActiveTab('vehicle-dashboard'); if (typeof setManifestTrip === 'function') setManifestTrip(null); }} 
+          className={`mobile-bottom-nav-item ${activeTab === 'vehicle-dashboard' ? 'active' : ''}`}
+        >
+          <span className="nav-icon">🛰️</span>
+          <span className="nav-label">Live GPS</span>
+        </button>
+        <button 
+          onClick={() => { setActiveTab('support-desk'); if (typeof setManifestTrip === 'function') setManifestTrip(null); }} 
+          className={`mobile-bottom-nav-item ${activeTab === 'support-desk' ? 'active' : ''}`}
+        >
+          <span className="nav-icon">💬</span>
+          <span className="nav-label">Support</span>
+        </button>
+        <button 
+          onClick={() => setIsMobileSidebarOpen(true)} 
+          className={`mobile-bottom-nav-item ${isMobileSidebarOpen ? 'active' : ''}`}
+        >
+          <span className="nav-icon">☰</span>
+          <span className="nav-label">Menu</span>
+        </button>
+      </div>
 
     </div>
   );
