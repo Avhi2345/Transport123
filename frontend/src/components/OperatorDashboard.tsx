@@ -758,11 +758,6 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
   return (
     <div className="animate-fade-in operator-dashboard-layout">
       
-      {/* Sidebar Backdrop Overlay on Mobile */}
-      <div 
-        className={`operator-sidebar-backdrop ${isMobileSidebarOpen ? 'open' : ''}`} 
-        onClick={() => setIsMobileSidebarOpen(false)}
-      />
 
       {/* Sidebar (Operator Console Navigation) */}
       <div className={`scrollable-tabs-container ${isMobileSidebarOpen ? 'open' : ''}`}>
@@ -863,7 +858,27 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
           </h1>
         </div>
         
-        <div className="dashboard-header-right">
+        <div className="dashboard-header-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Boarding Lens Scanner header trigger */}
+          <button 
+            onClick={() => setIsScanningQR(true)}
+            className="btn btn-secondary btn-inline" 
+            style={{ 
+              padding: '6px 12px', 
+              fontSize: '0.75rem', 
+              margin: 0, 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px',
+              borderRadius: '8px',
+              borderColor: 'var(--accent-primary)',
+              color: 'var(--accent-primary)',
+              background: 'var(--accent-glow)'
+            }}
+          >
+            📸 Boarding Lens
+          </button>
+          
           {/* Notifications bell icon buttons */}
           <button className="dashboard-header-icon-btn" aria-label="Notifications">
             🔔
@@ -2747,38 +2762,187 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
           onClick={() => { setActiveTab('overview'); if (typeof setManifestTrip === 'function') setManifestTrip(null); }} 
           className={`mobile-bottom-nav-item ${activeTab === 'overview' ? 'active' : ''}`}
         >
-          <span className="nav-icon">🎛️</span>
+          <span className="nav-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+            </svg>
+          </span>
           <span className="nav-label">Overview</span>
         </button>
         <button 
           onClick={() => { setActiveTab('trips'); if (typeof setManifestTrip === 'function') setManifestTrip(null); }} 
           className={`mobile-bottom-nav-item ${activeTab === 'trips' ? 'active' : ''}`}
         >
-          <span className="nav-icon">📋</span>
+          <span className="nav-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+            </svg>
+          </span>
           <span className="nav-label">Trips</span>
         </button>
         <button 
           onClick={() => { setActiveTab('vehicle-dashboard'); if (typeof setManifestTrip === 'function') setManifestTrip(null); }} 
           className={`mobile-bottom-nav-item ${activeTab === 'vehicle-dashboard' ? 'active' : ''}`}
         >
-          <span className="nav-icon">🛰️</span>
+          <span className="nav-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
+              <polygon points="3 11 22 2 13 21 11 13 3 11" />
+            </svg>
+          </span>
           <span className="nav-label">Live GPS</span>
         </button>
         <button 
           onClick={() => { setActiveTab('support-desk'); if (typeof setManifestTrip === 'function') setManifestTrip(null); }} 
           className={`mobile-bottom-nav-item ${activeTab === 'support-desk' ? 'active' : ''}`}
         >
-          <span className="nav-icon">💬</span>
+          <span className="nav-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          </span>
           <span className="nav-label">Support</span>
         </button>
         <button 
           onClick={() => setIsMobileSidebarOpen(true)} 
           className={`mobile-bottom-nav-item ${isMobileSidebarOpen ? 'active' : ''}`}
         >
-          <span className="nav-icon">☰</span>
+          <span className="nav-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: '20px', height: '20px' }}>
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </span>
           <span className="nav-label">Menu</span>
         </button>
       </div>
+
+      {/* Premium Mobile Menu Bottom Sheet Modal */}
+      {isMobileSidebarOpen && (
+        <div 
+          className="modal-overlay open animate-fade-in" 
+          style={{ zIndex: 1200, background: 'rgba(5, 7, 12, 0.65)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', position: 'fixed', inset: 0, padding: 0 }}
+          onClick={() => setIsMobileSidebarOpen(false)}
+        >
+          <div 
+            className="glass-panel" 
+            style={{
+              width: '100%',
+              background: 'var(--sidebar-bg)',
+              borderRadius: '24px 24px 0 0',
+              padding: '24px 20px 40px 20px',
+              boxShadow: '0 -10px 40px rgba(0,0,0,0.5)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              maxHeight: '80vh',
+              overflowY: 'auto',
+              border: 'none',
+              borderTop: '1px solid rgba(255,255,255,0.08)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Slide-up Sheet drag-handle bar indicator */}
+            <div style={{ width: '40px', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', margin: '0 auto 8px auto' }} />
+            
+            <h3 style={{ color: '#ffffff', fontSize: '1.2rem', marginBottom: '8px', textAlign: 'center', fontWeight: 600 }}>Operator Menu Navigation</h3>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <button 
+                onClick={() => { setActiveTab('overview'); setIsMobileSidebarOpen(false); }}
+                style={{ background: activeTab === 'overview' ? 'var(--sidebar-active)' : 'rgba(255,255,255,0.03)', border: 'none', padding: '16px 12px', borderRadius: '12px', color: '#fff', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+              >
+                <span style={{ fontSize: '1.3rem' }}>🎛️</span>
+                <strong>Dashboard</strong>
+              </button>
+              
+              <button 
+                onClick={() => { setActiveTab('edit-profile'); setIsMobileSidebarOpen(false); }}
+                style={{ background: activeTab === 'edit-profile' ? 'var(--sidebar-active)' : 'rgba(255,255,255,0.03)', border: 'none', padding: '16px 12px', borderRadius: '12px', color: '#fff', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+              >
+                <span style={{ fontSize: '1.3rem' }}>👤</span>
+                <strong>Step 1: Profile</strong>
+              </button>
+
+              <button 
+                onClick={() => { setActiveTab('create-vehicle'); setIsMobileSidebarOpen(false); }}
+                style={{ background: activeTab === 'create-vehicle' ? 'var(--sidebar-active)' : 'rgba(255,255,255,0.03)', border: 'none', padding: '16px 12px', borderRadius: '12px', color: '#fff', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+              >
+                <span style={{ fontSize: '1.3rem' }}>🚗</span>
+                <strong>Step 2: Fleet</strong>
+              </button>
+
+              <button 
+                onClick={() => { setActiveTab('fleet-dashboard'); setIsMobileSidebarOpen(false); }}
+                style={{ background: activeTab === 'fleet-dashboard' ? 'var(--sidebar-active)' : 'rgba(255,255,255,0.03)', border: 'none', padding: '16px 12px', borderRadius: '12px', color: '#fff', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+              >
+                <span style={{ fontSize: '1.3rem' }}>🚚</span>
+                <strong>Step 2.1: Directory</strong>
+              </button>
+
+              <button 
+                onClick={() => { setActiveTab('create-route'); setIsMobileSidebarOpen(false); }}
+                style={{ background: activeTab === 'create-route' ? 'var(--sidebar-active)' : 'rgba(255,255,255,0.03)', border: 'none', padding: '16px 12px', borderRadius: '12px', color: '#fff', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+              >
+                <span style={{ fontSize: '1.3rem' }}>🗺️</span>
+                <strong>Step 3: Routes</strong>
+              </button>
+
+              <button 
+                onClick={() => { setActiveTab('create-trip'); setIsMobileSidebarOpen(false); }}
+                style={{ background: activeTab === 'create-trip' ? 'var(--sidebar-active)' : 'rgba(255,255,255,0.03)', border: 'none', padding: '16px 12px', borderRadius: '12px', color: '#fff', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+              >
+                <span style={{ fontSize: '1.3rem' }}>📅</span>
+                <strong>Step 4: Trips</strong>
+              </button>
+
+              <button 
+                onClick={() => { setActiveTab('trips'); setIsMobileSidebarOpen(false); }}
+                style={{ background: activeTab === 'trips' ? 'var(--sidebar-active)' : 'rgba(255,255,255,0.03)', border: 'none', padding: '16px 12px', borderRadius: '12px', color: '#fff', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+              >
+                <span style={{ fontSize: '1.3rem' }}>📋</span>
+                <strong>Step 4.1: Manifests</strong>
+              </button>
+
+              <button 
+                onClick={() => { setActiveTab('fleet-dashboard'); setIsMobileSidebarOpen(false); }}
+                style={{ background: activeTab === 'fleet-dashboard' ? 'var(--sidebar-active)' : 'rgba(255,255,255,0.03)', border: 'none', padding: '16px 12px', borderRadius: '12px', color: '#fff', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+              >
+                <span style={{ fontSize: '1.3rem' }}>💰</span>
+                <strong>Step 5: Earnings</strong>
+              </button>
+
+              <button 
+                onClick={() => { setActiveTab('vehicle-dashboard'); setIsMobileSidebarOpen(false); }}
+                style={{ background: activeTab === 'vehicle-dashboard' ? 'var(--sidebar-active)' : 'rgba(255,255,255,0.03)', border: 'none', padding: '16px 12px', borderRadius: '12px', color: '#fff', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+              >
+                <span style={{ fontSize: '1.3rem' }}>🛰️</span>
+                <strong>Step 6: Live GPS</strong>
+              </button>
+
+              <button 
+                onClick={() => { setActiveTab('support-desk'); setIsMobileSidebarOpen(false); }}
+                style={{ background: activeTab === 'support-desk' ? 'var(--sidebar-active)' : 'rgba(255,255,255,0.03)', border: 'none', padding: '16px 12px', borderRadius: '12px', color: '#fff', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+              >
+                <span style={{ fontSize: '1.3rem' }}>💬</span>
+                <strong>Step 7: Support</strong>
+              </button>
+            </div>
+
+            <button 
+              onClick={() => { if (onLogout) onLogout(); else onBackToSearch(); setIsMobileSidebarOpen(false); }}
+              className="btn btn-secondary"
+              style={{ width: '100%', background: 'rgba(239, 68, 68, 0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', marginTop: '12px', minHeight: '44px', cursor: 'pointer' }}
+            >
+              🚪 Logout from Account
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );
