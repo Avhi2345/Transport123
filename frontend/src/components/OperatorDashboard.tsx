@@ -1,11 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../services/api';
+import { LiveTrackingVisual } from './LiveTrackingVisual';
 
 interface Vehicle {
   id: number;
   name: string;
   vehicle_number: string;
   vehicle_type: string;
+  is_active: boolean;
+  verification_status: string;
+  rc_url?: string;
+  vehicle_photo_url?: string;
+  driver_name?: string;
+  driver_contact?: string;
+  capacity?: number;
 }
 
 interface Route {
@@ -110,14 +118,22 @@ interface Stats {
 interface OperatorDashboardProps {
   onBackToSearch: () => void;
   onLogout?: () => void;
-  initialTab?: 'overview' | 'trips' | 'create-trip' | 'create-route' | 'create-vehicle' | 'edit-profile' | 'fleet-dashboard' | 'support-desk';
+  initialTab?: 'overview' | 'trips' | 'create-trip' | 'create-route' | 'create-vehicle' | 'edit-profile' | 'fleet-dashboard' | 'vehicle-dashboard' | 'support-desk';
 }
 
 export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSearch, onLogout, initialTab }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'trips' | 'create-trip' | 'create-route' | 'create-vehicle' | 'edit-profile' | 'fleet-dashboard' | 'support-desk'>(initialTab as any || 'overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'trips' | 'create-trip' | 'create-route' | 'create-vehicle' | 'edit-profile' | 'fleet-dashboard' | 'vehicle-dashboard' | 'support-desk'>(initialTab || 'overview');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isScanningQR, setIsScanningQR] = useState(false);
   const [scannedBooking, setScannedBooking] = useState<any | null>(null);
+  const [selectedVehicleForDashboard, setSelectedVehicleForDashboard] = useState<any | null>(null);
+
+  // Vehicle Simulation states
+  const [vehicleSimulating, setVehicleSimulating] = useState(false);
+  const [vehicleSimLat, setVehicleSimLat] = useState(26.1445);
+  const [vehicleSimLng, setVehicleSimLng] = useState(91.7362);
+  const [vehicleSimSpeed, setVehicleSimSpeed] = useState(0);
+  const [vehicleSimInterval, setVehicleSimInterval] = useState<any>(null);
   
   // Fleet Entry States
   const [fleetVehicles, setFleetVehicles] = useState<Array<{
@@ -153,7 +169,7 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
     if (initialTab) {
       Promise.resolve().then(() => {
         if (mounted) {
-          setActiveTab(initialTab as any);
+          setActiveTab(initialTab);
         }
       });
     }
@@ -807,10 +823,16 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
           💰 Step 5: Earnings Analytics
         </span>
         <span 
+          onClick={() => { setActiveTab('vehicle-dashboard'); setManifestTrip(null); setIsMobileSidebarOpen(false); }} 
+          className={`scrollable-tab-item ${activeTab === 'vehicle-dashboard' ? 'active' : ''}`}
+        >
+          🛰️ Step 6: Live GPS Tracking
+        </span>
+        <span 
           onClick={() => { setActiveTab('support-desk'); setManifestTrip(null); setIsMobileSidebarOpen(false); }} 
           className={`scrollable-tab-item ${activeTab === 'support-desk' ? 'active' : ''}`}
         >
-          💬 Step 6: Support Desk
+          💬 Step 7: Support Desk
         </span>
         
         <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
@@ -852,7 +874,8 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
              activeTab === 'create-route' ? 'Step 3: Create Routes' :
              activeTab === 'create-trip' ? 'Step 4: Schedule Trips' :
              activeTab === 'trips' ? 'Step 4.1: Trips & Passenger Manifests' :
-             activeTab === 'support-desk' ? 'Step 6: Compliance Support Desk' :
+             activeTab === 'vehicle-dashboard' ? 'Step 6: Live GPS Tracking Console' :
+             activeTab === 'support-desk' ? 'Step 7: Compliance Support Desk' :
              (activeTab as string).replace('-', ' ')}
           </h1>
         </div>
@@ -2363,6 +2386,294 @@ export const OperatorDashboard: React.FC<OperatorDashboardProps> = ({ onBackToSe
           </form>
         </div>
       )}
+
+      {activeTab === 'vehicle-dashboard' && (() => {
+        if (!selectedVehicleForDashboard) {
+          return (
+            <div className="glass-panel" style={{ padding: '30px' }}>
+              <h3 className="gradient-text" style={{ fontSize: '1.5rem', marginBottom: '10px' }}>Step 6: Live GPS Tracking Console</h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '24px' }}>
+                Select one of your registered vehicles below to open its real-time GPS tracking simulator and console, monitor current speeds, map coordinates, and report delay statuses.
+              </p>
+
+              {stats.vehicles.length === 0 ? (
+                <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '40px 0', border: '1px dashed var(--border-color)', borderRadius: '12px' }}>
+                  No vehicles registered yet. Please register your fleet in <strong>Step 2</strong>.
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+                  {stats.vehicles.map((vehicle: any) => (
+                    <div 
+                      key={vehicle.id} 
+                      style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                      className="hover-lift"
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <span style={{ fontSize: '0.75rem', padding: '4px 8px', borderRadius: '4px', background: 'var(--bg-tertiary)', color: 'var(--accent-primary)', textTransform: 'uppercase', fontWeight: 600 }}>
+                            {vehicle.vehicle_type}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', fontWeight: 600, background: vehicle.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)', color: vehicle.is_active ? '#34d399' : 'var(--text-muted)' }}>
+                            {vehicle.is_active ? 'ONLINE' : 'OFFLINE'}
+                          </span>
+                        </div>
+                        <h4 style={{ fontSize: '1.1rem', marginBottom: '4px', color: 'var(--text-main)' }}>{vehicle.name}</h4>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '12px' }}>Plate: <strong>{vehicle.vehicle_number}</strong></p>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px', marginBottom: '16px' }}>
+                          <div>👤 <strong>Driver:</strong> {vehicle.driver_name || 'Not assigned'}</div>
+                          <div>📞 <strong>Contact:</strong> {vehicle.driver_contact || 'N/A'}</div>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setSelectedVehicleForDashboard(vehicle)}
+                        className="btn btn-primary"
+                        style={{ width: '100%', padding: '8px 0', fontSize: '0.8rem', borderRadius: '8px', margin: 0 }}
+                      >
+                        🛰️ Open Console & Track
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // Find active trip details for this vehicle from stats
+        const activeTrip = stats.trips.find(t => t.vehicle_details?.vehicle_number === selectedVehicleForDashboard.vehicle_number);
+        const source = activeTrip?.route_details?.source || "Guwahati";
+        const destination = activeTrip?.route_details?.destination || "Shillong";
+        
+        // Calculate ETA string
+        const departureTime = activeTrip ? new Date(activeTrip.card_date + ' ' + activeTrip.card_time) : new Date();
+        const etaTime = new Date(departureTime.getTime() + (120 + delayMinutes) * 60 * 1000);
+        const etaStr = etaTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+        // Guwahati to Shillong Simulator Waypoints
+        const SIM_WAYPOINTS = [
+          { lat: 26.1445, lng: 91.7362 },
+          { lat: 26.1158, lng: 91.8211 },
+          { lat: 26.0610, lng: 91.8710 },
+          { lat: 25.9015, lng: 91.8812 },
+          { lat: 25.6482, lng: 91.8920 },
+          { lat: 25.5788, lng: 91.8833 }
+        ];
+
+        return (
+          <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '16px 24px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+              <div>
+                <span 
+                  onClick={() => {
+                    // Stop simulations on back
+                    if (vehicleSimulating) {
+                      clearInterval(vehicleSimInterval);
+                      setVehicleSimulating(false);
+                    }
+                    setSelectedVehicleForDashboard(null);
+                  }} 
+                  style={{ cursor: 'pointer', color: 'var(--accent-primary)', fontSize: '0.85rem', fontWeight: 500, display: 'inline-block', marginBottom: '4px' }}
+                >
+                  ← Back to Selection
+                </span>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>
+                  {selectedVehicleForDashboard.name} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 400 }}>({selectedVehicleForDashboard.vehicle_number})</span>
+                </h2>
+              </div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Device Status:</span>
+                <button 
+                  onClick={async () => {
+                    const newActiveState = !selectedVehicleForDashboard.is_active;
+                    try {
+                      setSelectedVehicleForDashboard({
+                        ...selectedVehicleForDashboard,
+                        is_active: newActiveState
+                      });
+                      
+                      if (stats) {
+                        const updatedVehicles = stats.vehicles.map((v: any) => 
+                          v.id === selectedVehicleForDashboard.id ? { ...v, is_active: newActiveState } : v
+                        );
+                        setStats({ ...stats, vehicles: updatedVehicles });
+                      }
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  }}
+                  className="btn btn-secondary btn-inline" 
+                  style={{ 
+                    padding: '6px 12px', 
+                    fontSize: '0.75rem', 
+                    background: selectedVehicleForDashboard.is_active ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', 
+                    color: selectedVehicleForDashboard.is_active ? '#34d399' : '#f87171',
+                    borderColor: selectedVehicleForDashboard.is_active ? '#10b981' : '#ef4444',
+                    margin: 0
+                  }}
+                >
+                  {selectedVehicleForDashboard.is_active ? '🟢 ONLINE' : '🔴 OFFLINE'}
+                </button>
+              </div>
+            </div>
+
+            {/* Live 3D Tracking Visual Component */}
+            <LiveTrackingVisual 
+              vehicleName={selectedVehicleForDashboard.name}
+              vehicleNumber={selectedVehicleForDashboard.vehicle_number}
+              vehicleType={selectedVehicleForDashboard.vehicle_type}
+              vehiclePhoto={selectedVehicleForDashboard.vehicle_photo_url ? `${api.defaults.baseURL?.replace('/api/transport/', '')}${selectedVehicleForDashboard.vehicle_photo_url}` : null}
+              source={source}
+              destination={destination}
+              driverName={selectedVehicleForDashboard.driver_name || 'Not assigned'}
+              driverContact={selectedVehicleForDashboard.driver_contact || 'N/A'}
+              speed={vehicleSimulating ? vehicleSimSpeed : 0}
+              nextStopName={vehicleSimulating ? "Nongpoh" : (activeTrip ? "Approaching Stop #1" : "Umiam Lake")}
+              nextStopDistance={vehicleSimulating ? "15 km away" : "Calculating..."}
+              eta={etaStr}
+              distanceCovered={vehicleSimulating ? "120 km" : "0 km"}
+              totalDistance="180 km"
+              statusText={delayMinutes > 0 ? `+${delayMinutes}m delay` : "On Time"}
+              statusColor={delayMinutes > 0 ? "#ef4444" : "#10b981"}
+              latitude={vehicleSimulating ? vehicleSimLat : 26.1445}
+              longitude={vehicleSimulating ? vehicleSimLng : 91.7362}
+            />
+
+            {/* Grid Control Board */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+              
+              {/* Left: GPS Simulation */}
+              <div className="glass-panel" style={{ padding: '24px' }}>
+                <h3 style={{ fontSize: '1.15rem', marginBottom: '16px', fontWeight: 600, color: 'var(--accent-primary)' }}>📍 Live GPS & Tracking Simulator</h3>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div>🛰️ <strong>GPS Signal:</strong> {selectedVehicleForDashboard.is_active ? 'CONNECTED' : 'DISCONNECTED'}</div>
+                    <div>🌐 <strong>Latitude:</strong> {vehicleSimulating ? vehicleSimLat.toFixed(6) : '26.144500'}</div>
+                    <div>🌐 <strong>Longitude:</strong> {vehicleSimulating ? vehicleSimLng.toFixed(6) : '91.736200'}</div>
+                    <div>⚡ <strong>Current Speed:</strong> {vehicleSimulating ? vehicleSimSpeed : '0'} km/h</div>
+                    <div>🛣️ <strong>Current Segment:</strong> {source} ➔ {destination}</div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    {!vehicleSimulating ? (
+                      <button 
+                        onClick={() => {
+                          if (!selectedVehicleForDashboard.is_active) {
+                            alert('Please toggle the vehicle device status to ONLINE first.');
+                            return;
+                          }
+                          setVehicleSimulating(true);
+                          setVehicleSimSpeed(55);
+                          let wpIndex = 0;
+                          let progress = 0;
+                          const interval = setInterval(() => {
+                            progress += 0.05; // 5% progression per tick
+                            if (progress >= 1) {
+                              progress = 0;
+                              wpIndex = (wpIndex + 1) % (SIM_WAYPOINTS.length - 1);
+                            }
+                            const currentWp = SIM_WAYPOINTS[wpIndex];
+                            const nextWp = SIM_WAYPOINTS[wpIndex + 1];
+                            const lat = currentWp.lat + (nextWp.lat - currentWp.lat) * progress;
+                            const lng = currentWp.lng + (nextWp.lng - currentWp.lng) * progress;
+                            
+                            setVehicleSimLat(lat);
+                            setVehicleSimLng(lng);
+                            setVehicleSimSpeed(Math.round(45 + Math.random() * 20));
+                          }, 1500);
+                          setVehicleSimInterval(interval);
+                        }}
+                        className="btn btn-primary" 
+                        style={{ flex: 1, padding: '10px', fontSize: '0.8rem', margin: 0 }}
+                      >
+                        🚀 Start Route Tracking
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => {
+                          clearInterval(vehicleSimInterval);
+                          setVehicleSimulating(false);
+                          setVehicleSimSpeed(0);
+                        }}
+                        className="btn btn-secondary" 
+                        style={{ flex: 1, padding: '10px', fontSize: '0.8rem', margin: 0, borderColor: '#ef4444', color: '#f87171' }}
+                      >
+                        ⏹️ Stop Tracking
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Delay Control */}
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>Trip Delay Manager</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Notify passengers in real-time</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button 
+                        onClick={() => setDelayMinutes(p => Math.max(0, p - 5))} 
+                        className="btn btn-secondary" 
+                        style={{ padding: '4px 10px', margin: 0, fontSize: '0.8rem' }}
+                      >
+                        -
+                      </button>
+                      <span style={{ fontSize: '0.9rem', fontWeight: 'bold', minWidth: '40px', textAlign: 'center', color: delayMinutes > 0 ? '#fbbf24' : 'var(--text-main)' }}>
+                        {delayMinutes}m
+                      </span>
+                      <button 
+                        onClick={() => setDelayMinutes(p => p + 5)} 
+                        className="btn btn-secondary" 
+                        style={{ padding: '4px 10px', margin: 0, fontSize: '0.8rem' }}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Passenger Manifest List */}
+              <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
+                <h3 style={{ fontSize: '1.15rem', marginBottom: '16px', fontWeight: 600, color: 'var(--accent-secondary)' }}>👥 Passenger Manifest</h3>
+                
+                <div style={{ overflowX: 'auto', flex: 1 }}>
+                  <table className="responsive-table" style={{ fontSize: '0.8rem', width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                        <th style={{ padding: '8px 4px' }}>Name</th>
+                        <th style={{ padding: '8px 4px' }}>Seat</th>
+                        <th style={{ padding: '8px 4px' }}>Route</th>
+                        <th style={{ padding: '8px 4px' }}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activeTrip ? (
+                        stats.recent_bookings.filter(b => b.trip_details.full_route === activeTrip.full_route).map((booking: any) => (
+                          <tr key={booking.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                            <td style={{ padding: '8px 4px' }}><strong>{booking.passenger_name}</strong><br/><span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{booking.passenger_phone}</span></td>
+                            <td style={{ padding: '8px 4px' }}>Seat {booking.seat_number}</td>
+                            <td style={{ padding: '8px 4px' }}>{booking.trip_details.full_route}</td>
+                            <td style={{ padding: '8px 4px', color: ['approved', 'paid', 'completed'].includes(booking.status) ? '#34d399' : '#fbbf24' }}>{booking.status.toUpperCase()}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={4} style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                            No active trip scheduled for this vehicle.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
 
       {activeTab === 'support-desk' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
